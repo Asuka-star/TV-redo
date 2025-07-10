@@ -152,6 +152,24 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implemen
         return lambdaQuery().eq(Follow::getType,type).eq(Follow::getFansId,userId).eq(Follow::getTargetId,targetId).exists();
     }
 
+    @Override
+    public List<Long> followWithShopIds(Long userId) {
+        return lambdaQuery().eq(Follow::getFansId,userId).eq(Follow::getType,1).select(Follow::getTargetId)
+                .list().stream().map(Follow::getTargetId).toList();
+    }
+
+    @Override
+    public List<Long> followWithUserIds(Long userId) {
+        return lambdaQuery().eq(Follow::getFansId,userId).eq(Follow::getType,0).select(Follow::getTargetId)
+                .list().stream().map(Follow::getTargetId).toList();
+    }
+
+    @Override
+    public List<Long> getByUserId(Long userId) {
+        return lambdaQuery().eq(Follow::getFansId,userId).select(Follow::getTargetId)
+                .list().stream().map(Follow::getTargetId).toList();
+    }
+
     //限制关注和取关操作
     private void limitFollow(FollowDTO followDTO){
         //进行操作限流

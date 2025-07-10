@@ -3,7 +3,6 @@ com\wenjia\common\exception\UserException.class
 com\wenjia\common\exception\CouponException.class
 com\wenjia\common\context\BaseContext.class
 com\wenjia\common\interceptor\UserInfoInterceptor.class
-com\wenjia\common\result\ScrollResult.class
 com\wenjia\common\exception\FollowException.class
 com\wenjia\common\result\Result.class
 com\wenjia\common\config\MyBatisConfig.class
@@ -16,10 +15,8 @@ com\wenjia\common\exception\ShopException.class
 com\wenjia\common\exception\UploadException.class
 com\wenjia\common\constant\Constant.class
 com\wenjia\common\constant\OrderConstant.class
-com\wenjia\common\result\ScrollResult$ScrollResultBuilder.class
 com\wenjia\common\exception\PaymentException.class
 com\wenjia\common\constant\DateTimeFormat.class
-com\wenjia\common\result\PageResult.class
 com\wenjia\common\exception\ThumbException.class
 com\wenjia\common\exception\PostException.class
 com\wenjia\common\exception\CommentException.class

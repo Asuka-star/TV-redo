@@ -12,6 +12,7 @@ import com.wenjia.api.domain.po.Thumb;
 import com.wenjia.api.domain.vo.CommentVO;
 import com.wenjia.api.domain.vo.PageResult;
 import com.wenjia.api.service.CommentService;
+import com.wenjia.api.service.FollowService;
 import com.wenjia.api.service.ThumbService;
 import com.wenjia.comment.mapper.CommentMapper;
 import com.wenjia.common.constant.RedisConstant;
@@ -72,7 +73,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper,Comment> imple
                     .list()
                     .stream().map(Thumb::getTargetId).toList();
             //查询用户关注的所有用户id
-            List<Integer> followWithUserIds = followService.followWithUserIds(pageQueryUserId);
+            List<Long> followWithUserIds = followService.followWithUserIds(pageQueryUserId);
             //转化
             commentVOList=page.getRecords().stream()
                     .map(comment-> {

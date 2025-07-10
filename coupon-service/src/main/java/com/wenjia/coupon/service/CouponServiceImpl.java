@@ -16,6 +16,7 @@ import com.wenjia.common.constant.RedisConstant;
 import com.wenjia.common.context.BaseContext;
 import com.wenjia.common.exception.BaseException;
 import com.wenjia.common.exception.CouponException;
+import com.wenjia.common.util.RedisUtil;
 import com.wenjia.coupon.mapper.CouponMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -39,6 +40,8 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     private ShopService shopService;
     @DubboReference
     private OrderService orderService;
+
+    private final CouponMapper couponMapper;
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final RedissonClient redissonClient;
@@ -160,30 +163,30 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         //通过redis的lua脚本来解决超卖和一人一单的问题
         //当前用户id
         Long userId = BaseContext.getCurrentId();
-        int res = checkSeckill(couponId, userId, getExpireTimeByEndTime(coupon.getEndTime()));
-        if (res == 1) {
+        //检查优惠券库存和用户是否已经购买过了
+        long res = RedisUtil.checkSecKill(redisTemplate,couponId, userId, getExpireTimeByEndTime(coupon.getEndTime()));
+        if (res == 1L) {
             throw new CouponException("库存不足,已经被抢购完了");
-        } else if (res == 2) {
+        } else if (res == 2L) {
             throw new CouponException("您已经买过该优惠券了");
         }
         //返回零说明抢购成功
-        //生成订单id
-        Long orderId = RedisId.createId(RedisConstant.ORDER_KEY);
+        //todo 注意这里的订单id问题，我这里没有放入id
         Order order = Order.builder()
-                .id(orderId)
                 .userId(userId)
                 .couponId(couponId)
                 .createTime(LocalDateTime.now())
                 .build();
         //order创建的数据库操作并扣减了库存
         try {
-            orderProducer.sendOrderCreateMessage(order);
+            //todo 发送信息
+            //orderProducer.sendOrderCreateMessage(order);
         } catch (Exception e) {
             //信息发送失败进行缓存数据的回退
-            JedisUtil.updateStock(order.getCouponId(), order.getUserId());
+            RedisUtil.rollBackStock(redisTemplate,order.getCouponId(), order.getUserId());
             throw new CouponException("RRR服务繁忙请稍后再试");
         }
-        return orderId;
+        return 1L;
     }
 
 //    /**
@@ -223,11 +226,9 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         //可以进行删除，进行延迟双删,需要删除优惠券信息和优惠券库存信息
         String couponKey = RedisConstant.COUPON_KEY + couponId;
         String stockKey = RedisConstant.COUPON_STOCK_KEY + couponId;
-        JedisUtil.delete(couponKey);
-        JedisUtil.delete(stockKey);
-        couponDao.delete(couponId);
-        JedisUtil.deleteWithDelay(couponKey);
-        JedisUtil.deleteWithDelay(stockKey);
+        lambdaUpdate().eq(Coupon::getId,couponId).remove();
+        redisTemplate.delete(couponKey);
+        redisTemplate.delete(stockKey);
     }
 
     /**
@@ -239,66 +240,52 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             throw new CouponException("库存变化量过大");
         }
         //店主一次只能进行一次
-        ILock lock = new RedisLock(RedisConstant.UPDATE_STOCK_KEY + couponId);
-        if (lock.tryLock(2L)) {
-            try {
-                Coupon coupon = checkValid(couponId);
-                //判断优惠券抢购时间是否已经结束了
-                if (coupon.getEndTime().isBefore(LocalDateTime.now(ZoneOffset.ofHours(8)))) {
-                    throw new CouponException("当前优惠券已经结束抢购，无法再进行库存修改");
-                }
-                if (getStock(couponId) + stockChange > 1000000) throw new CouponException("优惠券库存超出限制");
-                //修改缓存中的库存
-                updateStockWithRedis(couponId, stockChange);
-                //修改数据库中的缓存
+        RLock lock = redissonClient.getLock(RedisConstant.UPDATE_STOCK_KEY + couponId);
+        try {
+            if (lock.tryLock(2L,10L,TimeUnit.SECONDS)) {
                 try {
-                    couponDao.updateStock(couponId, stockChange);
-                } catch (Exception e) {
-                    //数据库中的库存更新失败，需要将缓存中的库存回到最开始
-                    updateStockWithRedis(couponId, -stockChange);
-                    throw new CouponException("更新库存失败");
+                    Coupon coupon = checkValid(couponId);
+                    //判断优惠券抢购时间是否已经结束了
+                    if (coupon.getEndTime().isBefore(LocalDateTime.now(ZoneOffset.ofHours(8)))) {
+                        throw new CouponException("当前优惠券已经结束抢购，无法再进行库存修改");
+                    }
+                    if (getStock(couponId) + stockChange > 1000000) throw new CouponException("优惠券库存超出限制");
+                    //修改缓存中的库存
+                    updateStockWithRedis(couponId, stockChange);
+                    //修改数据库中的缓存
+                    try {
+                        couponMapper.updateStock(couponId, stockChange);
+                    } catch (Exception e) {
+                        //数据库中的库存更新失败，需要将缓存中的库存回到最开始
+                        updateStockWithRedis(couponId, -stockChange);
+                        throw new CouponException("更新库存失败");
+                    }
+                } finally {
+                    lock.unlock();
                 }
-            } finally {
-                lock.unLock();
+            } else {
+                //没有获取到锁
+                throw new CouponException("请勿重复操作");
             }
-        } else {
-            //没有获取到锁
-            throw new CouponException("请勿重复操作");
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public List<Coupon> getByShopId(Long shopId) {
+        return lambdaQuery().eq(Coupon::getShopId,shopId).list();
     }
 
     /**
      * 修改缓存中的优惠券库存
      */
     public void updateStockWithRedis(Long couponId, Integer stockChange) {
-        try (Jedis jedis = JedisConnectionPool.getJedis()) {
-            //先修改缓存中的库存值，使用lua脚本进行操作
-            String script = "local stock =redis.call('get',KEYS[1])\n" +
-                    "if not(stock) then \n" +
-                    "return 1\n" +
-                    "end\n" +
-                    "local stockNum=tonumber(stock)\n" +
-                    "local newStock=stockNum+tonumber(ARGV[1])\n" +
-                    "if newStock<0 then\n" +
-                    "return 2\n" +
-                    "end\n" +
-                    "local ttl = redis.call('ttl',KEYS[1]);\n" +
-                    "redis.call('set',KEYS[1],newStock)\n" +
-                    "if tonumber(ttl)>0 then\n" +
-                    "redis.call('expire',KEYS[1],ttl)\n" +
-                    "end\n" +
-                    "return 0";
-            Long res = (Long) jedis.eval(script,
-                    1,
-                    RedisConstant.COUPON_STOCK_KEY + couponId,
-                    stockChange.toString());
-            if (res == 1) {
-                throw new CouponException("优惠券已经被删除了");
-            } else if (res == 2) {
-                throw new CouponException("优惠券库存不足以减少输入的数量");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        long res=RedisUtil.updateStock(redisTemplate,couponId,stockChange);
+        if (res == 1) {
+            throw new CouponException("优惠券已经被删除了");
+        } else if (res == 2) {
+            throw new CouponException("优惠券库存不足以减少输入的数量");
         }
     }
 
@@ -320,36 +307,6 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         return coupon;
     }
 
-    /**
-     * 检查优惠券库存和用户是否已经购买过了
-     */
-    private int checkSeckill(Long couponId, Integer userId, Long expireTime) {
-        //需要记录是否购买过优惠券的用户id的缓存，过期时间
-        String script = "if tonumber(redis.call('get',KEYS[1])) <=0 then\n" +
-                "return 1\n" +
-                "end\n" +
-                "if redis.call('sismember',KEYS[2],ARGV[1]) ==1 then\n" +
-                "return 2\n" +
-                "end\n" +
-                "redis.call('decr',KEYS[1])\n" +
-                "redis.call('sadd',KEYS[2],ARGV[1])\n" +
-                "if tonumber(redis.call('ttl',KEYS[2])) ==-1 then\n" +
-                "redis.call('expire',KEYS[2],tonumber(ARGV[2]))\n" +
-                "end\n" +
-                "return 0";
-        try (Jedis jedis = JedisConnectionPool.getJedis()) {
-            Long res = (Long) jedis.eval(script,
-                    2,
-                    RedisConstant.COUPON_STOCK_KEY + couponId,
-                    RedisConstant.SECKILL_KEY + couponId,
-                    userId.toString(),
-                    expireTime.toString());
-            //就算是null，也刚好会被catch
-            return res.intValue();
-        } catch (Exception e) {
-            throw new RuntimeException("抢购优惠券的redis判断出现异常");
-        }
-    }
 
     /**
      * 检验用户传递的值

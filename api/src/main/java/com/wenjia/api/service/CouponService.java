@@ -20,4 +20,6 @@ public interface CouponService extends IService<Coupon> {
     void delete(Long couponId);
     //修改优惠券的库存
     void updateStock(Long couponId, Integer stockChange);
+    //判断商铺名下还有没有正在抢购的优惠券
+    List<Coupon> getByShopId(Long shopId);
 }

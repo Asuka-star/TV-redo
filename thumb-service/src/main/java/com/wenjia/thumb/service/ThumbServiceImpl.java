@@ -162,4 +162,10 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
         pageResult.setTotal(page.getTotal());
         return pageResult;
     }
+
+    @Override
+    public List<Long> thumbWithShopIds(Long userId) {
+        return lambdaQuery().eq(Thumb::getUserId,userId).eq(Thumb::getType,1).select(Thumb::getTargetId).list()
+                .stream().map(Thumb::getTargetId).toList();
+    }
 }

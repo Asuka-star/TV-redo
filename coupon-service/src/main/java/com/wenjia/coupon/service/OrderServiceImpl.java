@@ -19,8 +19,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
     @Override
     public List<OrderVO> getOwnedShops() {
-        List<Order> orders=orderDao.getByUserId(BaseContext.getCurrentId());
-        lambdaQuery()
+        List<Order> orders = lambdaQuery().eq(Order::getUserId, BaseContext.getCurrentId()).list();
         return orders.stream().map(o -> {
             return OrderVO.builder()
                     .id(o.getId())

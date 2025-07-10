@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wenjia.api.domain.dto.ShopDTO;
 import com.wenjia.api.domain.pageQuery.ShopPageQuery;
+import com.wenjia.api.domain.po.Coupon;
 import com.wenjia.api.domain.po.Shop;
 import com.wenjia.api.domain.vo.CouponVO;
 import com.wenjia.api.domain.vo.ShopVO;
@@ -112,9 +113,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                         //if(Objects.equals(BaseContext.getCurrentId(),shopPageQueryUserId))
                         // throw new ShopException("用户账号异常");
                         //查询用户点赞的所有商铺id
-                        List<Integer> thumbWithShopIds = thumbService.thumbWithShopIds(shopPageQueryUserId);
+                        List<Long> thumbWithShopIds = thumbService.thumbWithShopIds(shopPageQueryUserId);
                         //查询用户关注的所有商铺id
-                        List<Integer> followWithShopIds = followService.followWithShopIds(shopPageQueryUserId);
+                        List<Long> followWithShopIds = followService.followWithShopIds(shopPageQueryUserId);
                         for (Shop shop : shopList) {
                             //判断当前用户是否有关注或者点赞了该商铺
                             Boolean hasThumb = thumbWithShopIds.contains(shop.getId());
@@ -155,13 +156,13 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
             throw new ShopException("您不是此商铺的店主，无法删除此商铺");
         }
         //判断商铺名下还有没有正在抢购的优惠券
-        List<CouponVO> couponVOS = couponService.getByShopId(shop.getId());
-        for(CouponVO couponVO:couponVOS){
-            LocalDateTime beginTime = couponVO.getBeginTime();
-            LocalDateTime endTime = couponVO.getEndTime();
+        List<Coupon> coupons = couponService.getByShopId(shop.getId());
+        for(Coupon coupon:coupons){
+            LocalDateTime beginTime = coupon.getBeginTime();
+            LocalDateTime endTime = coupon.getEndTime();
             LocalDateTime now = LocalDateTime.now();
-            if(now.isAfter(beginTime)&&now.isBefore(endTime)){
-                throw new ShopException("当前商铺还有正在抢购的优惠券："+couponVO.getName());
+            if (now.isAfter(beginTime) && now.isBefore(endTime)) {
+                throw new ShopException("当前商铺还有正在抢购的优惠券：" + coupon.getName());
             }
         }
         //todo 完成延时双删（单个商铺的缓存）

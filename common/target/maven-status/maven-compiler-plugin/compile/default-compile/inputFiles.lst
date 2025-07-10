@@ -2,6 +2,7 @@ E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\advice\CommonExc
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\config\ExceptionConfig.java
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\config\MQConfig.java
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\config\MyBatisConfig.java
+E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\config\RedisConfig.java
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\constant\Constant.java
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\constant\DateTimeFormat.java
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\constant\OrderConstant.java
@@ -20,6 +21,5 @@ E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\exception\ThumbE
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\exception\UploadException.java
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\exception\UserException.java
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\interceptor\UserInfoInterceptor.java
-E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\result\PageResult.java
 E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\result\Result.java
-E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\result\ScrollResult.java
+E:\java\ideacode\TV-redo\common\src\main\java\com\wenjia\common\util\RedisUtil.java

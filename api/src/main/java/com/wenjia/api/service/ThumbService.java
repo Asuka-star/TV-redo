@@ -21,4 +21,7 @@ public interface ThumbService extends IService<Thumb> {
 
     //分页查询点赞
     PageResult<ThumbVO> pageQuery(ThumbPageQuery thumbPageQuery);
+
+    //查询用户点赞的所有商铺id
+    List<Long> thumbWithShopIds(Long userId);
 }

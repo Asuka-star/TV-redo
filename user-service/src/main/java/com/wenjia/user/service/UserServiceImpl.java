@@ -4,8 +4,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wenjia.api.domain.dto.UserDTO;
 import com.wenjia.api.domain.po.User;
 import com.wenjia.api.service.UserService;
-import com.wenjia.common.advice.CommonExceptionAdvice;
-import com.wenjia.common.config.ExceptionConfig;
 import com.wenjia.common.context.BaseContext;
 import com.wenjia.common.exception.UserException;
 import com.wenjia.user.mapper.UserMapper;

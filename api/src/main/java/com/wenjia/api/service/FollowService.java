@@ -8,6 +8,8 @@ import com.wenjia.api.domain.po.Follow;
 import com.wenjia.api.domain.vo.FollowVO;
 import com.wenjia.api.domain.vo.PageResult;
 
+import java.util.List;
+
 public interface FollowService extends IService<Follow> {
     //取消关注
     void cancelFollow(FollowDTO followDTO);
@@ -20,4 +22,13 @@ public interface FollowService extends IService<Follow> {
 
     //判断是否关注过
     boolean hasFollow(Integer type,Long userId,Long targetId);
+
+    //查询用户关注的所有商铺id
+    List<Long> followWithShopIds(Long userId);
+
+    //查询用户关注的所有用户id
+    List<Long> followWithUserIds(Long userId);
+
+    //查询用户关注的所有商铺和用户的id
+    List<Long> getByUserId(Long userId);
 }

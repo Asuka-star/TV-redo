@@ -3,7 +3,6 @@ package com.wenjia.post.service;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wenjia.api.domain.dto.PostDTO;
 import com.wenjia.api.domain.po.Post;
@@ -26,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 @DubboService
 @RequiredArgsConstructor
@@ -39,6 +39,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper,Post> implements Pos
     private ShopService shopService;
     @DubboReference
     private FavoriteService favoriteService;
+    @DubboReference
+    private FollowService followService;
     //todo 消息发送者
     //private PostProducer postProducer;
     private final RedisTemplate<String,Object> redisTemplate;
@@ -103,8 +105,21 @@ public class PostServiceImpl extends ServiceImpl<PostMapper,Post> implements Pos
         if(postList.size()<3){
             //查询数据库中的冷数据
             LocalDateTime time = LocalDateTime.ofEpochSecond(cursor, 0, ZoneOffset.ofHours(8));
-            //todo 这个是多表查询
-            List<Post> posts=postDao.selectRecentPost(userId,time,3-postList.size(),offset);
+            //这个是多表查询
+            //先查询用户关注商铺的列表
+            List<Long> shopIds = followService.followWithShopIds(userId);
+            //查询用户关注的商铺的动态
+            List<Post> shops = lambdaQuery().le(Post::getCreateTime, time).eq(Post::getType, 1)
+                    .in(Post::getPublisherId, shopIds).orderByDesc(Post::getCreateTime).last("limit " + (3 - postList.size())).list();
+            //查询用户关注用户的列表
+            List<Long> userIds = followService.followWithUserIds(userId);
+            //查询用户关注的用户的动态
+            List<Post> users = lambdaQuery().le(Post::getCreateTime, time).eq(Post::getType, 0)
+                    .in(Post::getPublisherId, userIds).orderByDesc(Post::getCreateTime).last("limit " + (3 - postList.size())).list();
+            //再使用stream流进行合并
+            List<Post> posts = Stream.of(shops, users).flatMap(Collection::stream)//再看一下下面的那个排序写对了没
+                    .sorted((a, b) -> a.getCreateTime().isBefore(b.getCreateTime()) ? -1 : 1)
+                    .limit(3 - postList.size()).toList();
             for(Post post:posts){
                 postList.add(post);
                 long timestamp = post.getCreateTime().toEpochSecond(ZoneOffset.ofHours(8));
