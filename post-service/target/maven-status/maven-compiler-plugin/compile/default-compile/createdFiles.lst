@@ -1,0 +1,4 @@
+com\wenjia\post\mapper\PostMapper.class
+com\wenjia\post\service\PostServiceImpl.class
+com\wenjia\post\controller\PostController.class
+com\wenjia\post\PostApplication.class

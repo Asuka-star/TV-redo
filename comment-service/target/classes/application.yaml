@@ -1,0 +1,5 @@
+server:
+  port: 8094 # 服务端口
+wenjia:
+  springdoc:
+    scan: com.wenjia.comment.controller

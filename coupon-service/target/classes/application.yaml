@@ -1,0 +1,5 @@
+server:
+  port: 8097 # 服务端口
+wenjia:
+  springdoc:
+    scan: com.wenjia.coupon.controller
