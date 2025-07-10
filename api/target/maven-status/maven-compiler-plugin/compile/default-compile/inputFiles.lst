@@ -1,0 +1,15 @@
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\CommentDTO.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\CouponDTO.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\FavoriteDTO.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\FollowDTO.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\pageQuery\CommentPageQuery.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\pageQuery\FollowPageQuery.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\pageQuery\PageQuery.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\pageQuery\ShopPageQuery.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\pageQuery\ThumbPageQuery.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\PostDTO.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\ShopDTO.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\ThumbDTO.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\dto\UserDTO.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\domain\po\User.java
+E:\java\ideacode\TV-redo\api\src\main\java\com\wenjia\api\service\UserService.java

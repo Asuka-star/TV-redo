@@ -1,0 +1,5 @@
+server:
+  port: 8095 # 服务端口
+wenjia:
+  springdoc:
+    scan: com.wenjia.post.controller

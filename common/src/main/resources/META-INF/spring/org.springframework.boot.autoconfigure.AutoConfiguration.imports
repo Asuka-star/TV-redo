@@ -1,0 +1,3 @@
+com.wenjia.common.config.MyBatisConfig
+com.wenjia.common.config.ExceptionConfig
+com.wenjia.common.config.RedisConfig

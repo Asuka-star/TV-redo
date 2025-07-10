@@ -1,0 +1,5 @@
+server:
+  port: 8091 # 服务端口
+wenjia:
+  springdoc:
+    scan: com.wenjia.user.controller
