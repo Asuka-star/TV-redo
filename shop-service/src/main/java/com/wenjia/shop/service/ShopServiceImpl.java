@@ -236,12 +236,12 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     @Override
     public void incrCommentNumber(Long shopId) {
-        lambdaUpdate().setSql("commentNumber=commentNumber+1").eq(Shop::getId,shopId);
+        lambdaUpdate().setSql("comment_number=comment_number+1").eq(Shop::getId,shopId).update();
     }
 
     @Override
     public void decrCommentNumber(Long shopId) {
-        lambdaUpdate().setSql("commentNumber=commentNumber-1").eq(Shop::getId,shopId);
+        lambdaUpdate().setSql("comment_number=comment_number-1").eq(Shop::getId,shopId).update();
     }
 
     /**
