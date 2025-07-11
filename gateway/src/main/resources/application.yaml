@@ -12,5 +12,6 @@ wenjia:
       - /shop
       - /coupon
       - /coupon/stock
+    may-paths:
       - /comment/page
       - /shop/page

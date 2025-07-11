@@ -3,3 +3,6 @@ server:
 wenjia:
   springdoc:
     scan: com.wenjia.post.controller
+dubbo:
+  protocol:
+    port: 20885

@@ -53,7 +53,7 @@ public class UserController {
 
     @Operation(summary = "查询用户粉丝数")
     @GetMapping("/fans")
-    public Result<Integer> getFansNumber(@Min(1)@RequestParam Integer id){
+    public Result<Integer> getFansNumber(@Min(1)@RequestParam("id") Integer id){
         Integer fansNumber= userService.getFansNumberById(id);
         return Result.success(fansNumber);
     }

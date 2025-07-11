@@ -1,5 +1,8 @@
 server:
-  port: 8092 # 服务端口
+  port: 8096 # 服务端口
 wenjia:
   springdoc:
     scan: com.wenjia.shop.controller
+dubbo:
+  protocol:
+    port: 20886

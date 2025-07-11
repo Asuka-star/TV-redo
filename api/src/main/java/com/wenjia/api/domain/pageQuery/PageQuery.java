@@ -12,10 +12,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PageQuery {
+public class PageQuery implements Serializable {
     @Min(value = 0,message = "页码不能小于0")
     @Max(value = 100,message = "页码不能大于100")
     private Integer page;

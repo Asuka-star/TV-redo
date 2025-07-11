@@ -11,7 +11,6 @@ import com.wenjia.api.domain.dto.ShopDTO;
 import com.wenjia.api.domain.pageQuery.ShopPageQuery;
 import com.wenjia.api.domain.po.Coupon;
 import com.wenjia.api.domain.po.Shop;
-import com.wenjia.api.domain.vo.CouponVO;
 import com.wenjia.api.domain.vo.ShopVO;
 import com.wenjia.api.service.CouponService;
 import com.wenjia.api.service.FollowService;
@@ -58,10 +57,11 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     public void register(ShopDTO shopDTO) {
         //封装成shop对象
         Shop shop = BeanUtil.copyProperties(shopDTO,Shop.class);
-
         //todo 这里完成缓存的延时双删（分页的缓存），还有es来进行查询
         //向数据库insert
         save(shop);
+        //删除缓存
+        deletePageCache();
     }
 
     @Override
@@ -81,7 +81,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
         //根据查询条件来查询对应shop表中的个数
         //进行加锁以免缓存击穿
         //获取分布式锁
-        Long count=0L;
+        long count=0L;
         List<ShopVO> shopVOList = null;
         RLock lock = redissonClient.getLock(key);
         try {
@@ -97,7 +97,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                     List<Shop> shopList = shopPage.getRecords();
                     //将Shop转化成ShopVO,还需要返回hasFollow和hasThumb(判断当前用户是否有进行登录)
                     shopVOList = new ArrayList<>();
-                    if (shopPageQuery.getUserId() == null) {
+                    Long userId = BaseContext.getCurrentId();
+                    if (userId == null) {
                         //如果当前用户没有登录则直接将hasFollow和hasThumb设置为false,不设置也行,默认就是false
                         for (Shop shop : shopList) {
                             //转化
@@ -107,15 +108,11 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                             shopVOList.add(shopVO);
                         }
                     } else {
-                        //todo 这里的用户id是由前端传递的，有隐私问题，就像我拿别人的id来发送请求，就能看到别人的关注商铺了
                         //当前已经有用户登录了,需要去查找关注表和点赞表来给hasFollow和hasThumb赋值
-                        Long shopPageQueryUserId = shopPageQuery.getUserId();
-                        //if(Objects.equals(BaseContext.getCurrentId(),shopPageQueryUserId))
-                        // throw new ShopException("用户账号异常");
                         //查询用户点赞的所有商铺id
-                        List<Long> thumbWithShopIds = thumbService.thumbWithShopIds(shopPageQueryUserId);
+                        List<Long> thumbWithShopIds = thumbService.thumbWithShopIds(userId);
                         //查询用户关注的所有商铺id
-                        List<Long> followWithShopIds = followService.followWithShopIds(shopPageQueryUserId);
+                        List<Long> followWithShopIds = followService.followWithShopIds(userId);
                         for (Shop shop : shopList) {
                             //判断当前用户是否有关注或者点赞了该商铺
                             Boolean hasThumb = thumbWithShopIds.contains(shop.getId());
@@ -165,14 +162,17 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                 throw new ShopException("当前商铺还有正在抢购的优惠券：" + coupon.getName());
             }
         }
-        //todo 完成延时双删（单个商铺的缓存）
+        //todo
         // 还有这里需要分布式事务，还需要伤处这个商铺下面的优惠券，评论，关注，粉丝
         // 好像这里还需要注意分布式的代理问题，不然删除商铺的时候，方法没有被代理，然后事务就没有注册到seata中
         //进行删除店铺操作
         removeById(shop);
-        //延时双删
         redisTemplate.delete(RedisConstant.SHOP_KEY+shop.getId());
         //还要删除商铺分页查询的所有缓存
+        deletePageCache();
+    }
+
+    private void deletePageCache() {
         String keyPattern="shopPage:*";
         int batchSize=1000;
         List<String> KeysToDelete=new ArrayList<>(batchSize);
@@ -232,6 +232,16 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
             shopVOS.add(shopVO);
         }
         return shopVOS;
+    }
+
+    @Override
+    public void incrCommentNumber(Long shopId) {
+        lambdaUpdate().setSql("commentNumber=commentNumber+1").eq(Shop::getId,shopId);
+    }
+
+    @Override
+    public void decrCommentNumber(Long shopId) {
+        lambdaUpdate().setSql("commentNumber=commentNumber-1").eq(Shop::getId,shopId);
     }
 
     /**

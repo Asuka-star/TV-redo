@@ -14,4 +14,8 @@ public interface PostService extends IService<Post> {
     ScrollResult<Post> queryPage(Long cursor, Integer offset);
     //根据id查询post
     PostVO getById(Long postId);
+    //增加帖子评论数
+    void incrCommentNumber(Long postId);
+    //减少帖子评论数
+    void decrCommentNumber(Long postId);
 }

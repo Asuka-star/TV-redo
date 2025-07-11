@@ -165,7 +165,17 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
 
     @Override
     public List<Long> thumbWithShopIds(Long userId) {
-        return lambdaQuery().eq(Thumb::getUserId,userId).eq(Thumb::getType,1).select(Thumb::getTargetId).list()
+        return lambdaQuery().eq(Thumb::getUserId,userId).eq(Thumb::getType,0).select(Thumb::getTargetId).list()
+                .stream().map(Thumb::getTargetId).toList();
+    }
+
+    @Override
+    public List<Long> thumbWithCommentIds(Long userId) {
+        return lambdaQuery()
+                .eq(Thumb::getType,1)
+                .eq(Thumb::getUserId,userId)
+                .select(Thumb::getTargetId)
+                .list()
                 .stream().map(Thumb::getTargetId).toList();
     }
 }

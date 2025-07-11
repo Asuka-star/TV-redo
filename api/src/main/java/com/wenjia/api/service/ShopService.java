@@ -24,4 +24,10 @@ public interface ShopService extends IService<Shop> {
 
     //查询用户名下的商铺
     List<ShopVO> getOwnedShops();
+
+    //增加商铺评论数
+    void incrCommentNumber(Long shopId);
+
+    //减少商铺评论数
+    void decrCommentNumber(Long shopId);
 }

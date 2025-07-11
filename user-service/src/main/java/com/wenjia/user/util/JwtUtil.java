@@ -1,9 +1,5 @@
 package com.wenjia.user.util;
 
-
-
-
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -34,21 +30,5 @@ public class JwtUtil {
                 //设置过期时间
                 .expiration(exp)
                 .compact();
-    }
-
-    /**
-     * 解析jwt令牌
-     */
-    public static Claims parseJWT(String secretKey, String token) {
-        //将字符串密钥转换为安全的SecretKey对象
-        SecretKey key= Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
-        return Jwts.parser()
-                //设置验证密钥
-                .verifyWith(key)
-                .build()
-                //解析令牌
-                .parseSignedClaims(token)
-                //获得负载
-                .getPayload();
     }
 }

@@ -157,6 +157,16 @@ public class PostServiceImpl extends ServiceImpl<PostMapper,Post> implements Pos
         return postVO;
     }
 
+    @Override
+    public void incrCommentNumber(Long postId) {
+        lambdaUpdate().setSql("commentNumber=commentNumber+1").eq(Post::getId,postId);
+    }
+
+    @Override
+    public void decrCommentNumber(Long postId) {
+        lambdaUpdate().setSql("commentNumber=commentNumber-1").eq(Post::getId,postId);
+    }
+
     /**
      * 使用缓存来查询单个post
      */

@@ -51,6 +51,10 @@ public class AuthGlobalFilter implements GlobalFilter, Order {
             Claims claims = JwtUtil.parseJWT(jwtConfig.getSecretKey(), token);
             userId= Long.parseLong(claims.get("userId").toString());
         } catch (RuntimeException e) {
+            //解析token失败，再来判断一下当前路径是可以不用传递token的
+            if(isMay(path.toString())){
+                return chain.filter(exchange);
+            }
             ServerHttpResponse response = exchange.getResponse();
             response.setRawStatusCode(401);
             return response.setComplete();
@@ -62,6 +66,13 @@ public class AuthGlobalFilter implements GlobalFilter, Order {
                 .build();
         //放行
         return chain.filter(serverWebExchange);
+    }
+
+    private boolean isMay(String path) {
+        for(String mayPath:requestPathConfig.getMayPaths()){
+            if(antPathMatcher.match(mayPath,path)) return true;
+        }
+        return false;
     }
 
     private boolean isExclude(String path) {

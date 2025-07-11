@@ -29,14 +29,14 @@ public class PostController {
 
     @Operation(summary = "游标查询动态")
     @GetMapping("/page")
-    public Result<ScrollResult<Post>> queryPage(@RequestParam Long cursor,@RequestParam Integer offset){
+    public Result<ScrollResult<Post>> queryPage(@RequestParam("cursor") Long cursor,@RequestParam("offset") Integer offset){
         ScrollResult<Post> result=postService.queryPage(cursor,offset);
         return Result.success(result);
     }
 
     @Operation(summary = "查询单个动态")
     @GetMapping
-    public Result<PostVO> getById(Long postId){
+    public Result<PostVO> getById(@RequestParam("postId") Long postId){
         PostVO postVO=postService.getById(postId);
         return Result.success(postVO);
     }

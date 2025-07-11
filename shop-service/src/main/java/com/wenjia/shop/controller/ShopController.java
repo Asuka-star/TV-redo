@@ -12,16 +12,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("shop")
+@RequestMapping("/shop")
 @RequiredArgsConstructor
 @Tag(name = "商铺接口")
 public class ShopController {
-    private final ShopService shopService;
+    @DubboReference
+    private ShopService shopService;
 
     @Operation(summary = "商铺注册")
     @PostMapping
@@ -40,14 +42,15 @@ public class ShopController {
 
     @Operation(summary = "根据商铺id来删除商铺")
     @DeleteMapping
-    public Result<Void> deleteById(@Min(1)@RequestParam Long id) {
+    public Result<Void> deleteById(@Min(1)@RequestParam("id") Long id) {
         shopService.deleteByShopId(id);
         return Result.success();
     }
 
     @Operation(summary = "根据商铺id来查询商铺")
     @GetMapping
-    public Result<ShopVO> getById(@Min(1)@RequestParam Long id) {
+    //todo 注意这个param注解中要写方法参数的名字，因为我没有另外去搞所以反射获取不到参数名字
+    public Result<ShopVO> getById(@Min(1)@RequestParam("id") Long id) {
         ShopVO shopVO = shopService.getByIdWithCache(id);
         return Result.success(shopVO);
     }

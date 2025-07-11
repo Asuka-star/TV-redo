@@ -30,14 +30,14 @@ public class CommentController {
 
     @Operation(summary = "新增评论")
     @PostMapping
-    public Result<Void> add(@Valid CommentDTO commentDTO) {
+    public Result<Void> add(@RequestBody @Valid CommentDTO commentDTO) {
         commentService.add(commentDTO);
         return Result.success();
     }
 
     @Operation(summary = "根据评论id来删除评论")
     @DeleteMapping
-    public Result<Void> deleteById(@RequestParam Long id) {
+    public Result<Void> deleteById(@RequestParam("id") Long id) {
         commentService.deleteById(id);
         return Result.success();
     }

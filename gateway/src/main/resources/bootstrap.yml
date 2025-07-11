@@ -6,6 +6,7 @@ spring:
       server-addr: 192.168.145.128:8848
       discovery:
         namespace: 123
+        group: SPRING_CLOUD_GROUP
       config:
         namespace: 123
     gateway:

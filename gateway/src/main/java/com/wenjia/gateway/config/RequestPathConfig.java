@@ -16,4 +16,6 @@ import java.util.List;
 public class RequestPathConfig {
     //用来存放可以直接放行的请求路径
     private List<String> excludePaths;
+    //用来存放可能含有token的请求路径
+    private List<String> mayPaths;
 }

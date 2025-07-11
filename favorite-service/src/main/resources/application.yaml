@@ -1,5 +1,13 @@
 server:
-  port: 8096 # 服务端口
+  port: 8093 # 服务端口
 wenjia:
   springdoc:
     scan: com.wenjia.favorite.controller
+dubbo:
+  protocol:
+    port: 20883
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
