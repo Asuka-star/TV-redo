@@ -164,7 +164,19 @@ public class PostServiceImpl extends ServiceImpl<PostMapper,Post> implements Pos
 
     @Override
     public void decrCommentNumber(Long postId) {
-        lambdaUpdate().setSql("comment_number=comment_number-1").eq(Post::getId,postId).update();
+        lambdaUpdate().setSql("comment_number=comment_number-1")
+                .eq(Post::getId,postId).ge(Post::getCommentNumber,0).update();
+    }
+
+    @Override
+    public void incrThumbNumber(Long postId) {
+        lambdaUpdate().setSql("thumb_number=thumb_number+1").eq(Post::getId,postId).update();
+    }
+
+    @Override
+    public void decrThumbNumber(Long postId) {
+        lambdaUpdate().setSql("thumb_number=thumb_number-1")
+                .eq(Post::getId,postId).ge(Post::getThumbNumber,0).update();
     }
 
     /**

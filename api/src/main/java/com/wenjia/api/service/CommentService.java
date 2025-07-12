@@ -17,4 +17,10 @@ public interface CommentService extends IService<Comment> {
 
     //根据id删除评论
     void deleteById(Long id);
+
+    //减少评论点赞数
+    void decrThumbNumber(Long id);
+
+    //怎加评论点赞数
+    void incrThumbNumber(Long id);
 }

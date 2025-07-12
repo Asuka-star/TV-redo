@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wenjia.api.domain.dto.ShopDTO;
 import com.wenjia.api.domain.pageQuery.ShopPageQuery;
+import com.wenjia.api.domain.po.Comment;
 import com.wenjia.api.domain.po.Coupon;
 import com.wenjia.api.domain.po.Shop;
 import com.wenjia.api.domain.vo.ShopVO;
@@ -241,7 +242,19 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     @Override
     public void decrCommentNumber(Long shopId) {
-        lambdaUpdate().setSql("comment_number=comment_number-1").eq(Shop::getId,shopId).update();
+        lambdaUpdate().setSql("comment_number=comment_number-1")
+                .eq(Shop::getId,shopId).ge(Shop::getCommentNumber,0).update();
+    }
+
+    @Override
+    public void incrThumbNumber(Long shopId) {
+        lambdaUpdate().setSql("thumb_number=thumb_number+1").eq(Shop::getId,shopId).update();
+    }
+
+    @Override
+    public void decrThumbNumber(Long shopId) {
+        lambdaUpdate().setSql("thumb_number=thumb_number-1")
+                .eq(Shop::getId,shopId).ge(Shop::getThumbNumber,0).update();
     }
 
     /**

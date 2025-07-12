@@ -9,14 +9,19 @@ import com.wenjia.api.domain.pageQuery.ThumbPageQuery;
 import com.wenjia.api.domain.po.Thumb;
 import com.wenjia.api.domain.vo.PageResult;
 import com.wenjia.api.domain.vo.ThumbVO;
+import com.wenjia.api.service.CommentService;
+import com.wenjia.api.service.PostService;
+import com.wenjia.api.service.ShopService;
 import com.wenjia.api.service.ThumbService;
 import com.wenjia.common.constant.RedisConstant;
 import com.wenjia.common.context.BaseContext;
 import com.wenjia.common.exception.ThumbException;
 import com.wenjia.common.util.RedisUtil;
 import com.wenjia.thumb.mapper.ThumbMapper;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -34,10 +39,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements ThumbService {
 
+    @DubboReference
+    private CommentService commentService;
+    @DubboReference
+    private ShopService shopService;
+    @DubboReference
+    private PostService postService;
+
     private final RedissonClient redissonClient;
     private final RedisTemplate<String,Object> redisTemplate;
 
     @Override
+    @GlobalTransactional
     public void thumb(ThumbDTO thumbDTO) {
         //检查数据
         Integer type = thumbDTO.getType();
@@ -69,10 +82,22 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
                     //数据库中的点赞表新增数据
                     Thumb thumb=BeanUtil.copyProperties(thumbDTO,Thumb.class);
                     thumb.setCreateTime(LocalDateTime.now());
-                    //todo 需要开启事务进行更新商铺，评论，帖子的点赞数
+                    //需要开启事务进行更新商铺，评论，帖子的点赞数
                     save(thumb);
-                    if(type==0) redisTemplate.delete(RedisConstant.SHOP_KEY+thumb.getTargetId());
-                    if(type==2) redisTemplate.opsForHash().increment(RedisConstant.POST_KEY + thumb.getTargetId(),"thumbNumber",1L);
+                    if(type==0) {
+                        //商铺
+                        shopService.incrThumbNumber(targetId);
+                        redisTemplate.delete(RedisConstant.SHOP_KEY + targetId);
+                    }
+                    if(type==1) {
+                        //评论
+                        commentService.incrThumbNumber(targetId);
+                    }
+                    if(type==2) {
+                        //帖子
+                        postService.incrThumbNumber(targetId);
+                        redisTemplate.opsForHash().increment(RedisConstant.POST_KEY + targetId, "thumbNumber", 1L);
+                    }
                 } finally {
                     lock.unlock();
                 }
@@ -119,8 +144,17 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
                             .targetId(targetId)
                             .build();
                     lambdaUpdate().eq(Thumb::getType,type).eq(Thumb::getUserId,userId).eq(Thumb::getTargetId,targetId).remove();
-                    if(type==0) redisTemplate.delete(RedisConstant.SHOP_KEY+thumb.getTargetId());
-                    if(type==2) redisTemplate.opsForHash().increment(RedisConstant.POST_KEY+thumb.getTargetId(),"thumbNumber",-1L);
+                    if(type==0) {
+                        shopService.decrThumbNumber(targetId);
+                        redisTemplate.delete(RedisConstant.SHOP_KEY + thumb.getTargetId());
+                    }
+                    if(type==1){
+                        commentService.decrThumbNumber(targetId);
+                    }
+                    if(type==2) {
+                        postService.decrThumbNumber(targetId);
+                        redisTemplate.opsForHash().increment(RedisConstant.POST_KEY + thumb.getTargetId(), "thumbNumber", -1L);
+                    }
                 } finally {
                     lock.unlock();
                 }
@@ -165,14 +199,17 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
 
     @Override
     public List<Long> thumbWithShopIds(Long userId) {
-        return lambdaQuery().eq(Thumb::getUserId,userId).eq(Thumb::getType,0).select(Thumb::getTargetId).list()
-                .stream().map(Thumb::getTargetId).toList();
+        return thumbWithTargetIds(userId,0);
     }
 
     @Override
     public List<Long> thumbWithCommentIds(Long userId) {
+        return thumbWithTargetIds(userId,1);
+    }
+
+    public List<Long> thumbWithTargetIds(Long userId,Integer type){
         return lambdaQuery()
-                .eq(Thumb::getType,1)
+                .eq(Thumb::getType,type)
                 .eq(Thumb::getUserId,userId)
                 .select(Thumb::getTargetId)
                 .list()

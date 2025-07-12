@@ -29,12 +29,12 @@ public class ThumbController {
 
     @Operation(summary = "取消点赞")
     @DeleteMapping
-    //todo 注意一下这里要不要改成@RequestBody
     public Result<Void> cancelThumb(@Valid ThumbDTO thumbDTO) {
         thumbService.cancelThumb(thumbDTO);
         return Result.success();
     }
 
+    //todo 后面还有每个服务的熔断降级
     @Operation(summary = "分页查询用户点赞记录")
     @GetMapping("/page")
     public Result<PageResult<ThumbVO>> page(@Valid ThumbPageQuery thumbPageQuery) {

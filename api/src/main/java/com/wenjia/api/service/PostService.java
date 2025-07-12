@@ -18,4 +18,8 @@ public interface PostService extends IService<Post> {
     void incrCommentNumber(Long postId);
     //减少帖子评论数
     void decrCommentNumber(Long postId);
+    //增加帖子点赞数
+    void incrThumbNumber(Long id);
+    //减少帖子点赞数
+    void decrThumbNumber(Long id);
 }

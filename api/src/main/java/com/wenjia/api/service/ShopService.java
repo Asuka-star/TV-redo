@@ -30,4 +30,11 @@ public interface ShopService extends IService<Shop> {
 
     //减少商铺评论数
     void decrCommentNumber(Long shopId);
+
+    //增加商铺点赞数
+    void incrThumbNumber(Long id);
+
+    //减少商铺点赞数
+    void decrThumbNumber(Long id);
+
 }
