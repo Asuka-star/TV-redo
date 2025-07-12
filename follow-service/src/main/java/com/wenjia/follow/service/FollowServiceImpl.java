@@ -96,6 +96,7 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implemen
     }
 
     @Override
+    @GlobalTransactional
     public void cancelFollow(FollowDTO followDTO) {
         //进行操作限流
         limitFollow(followDTO);

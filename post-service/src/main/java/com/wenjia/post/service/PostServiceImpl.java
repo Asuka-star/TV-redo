@@ -179,6 +179,18 @@ public class PostServiceImpl extends ServiceImpl<PostMapper,Post> implements Pos
                 .eq(Post::getId,postId).ge(Post::getThumbNumber,0).update();
     }
 
+    @Override
+    public void incrFavoriteNumber(Long postId) {
+        lambdaUpdate().setSql("favorite_number=favorite_number-1")
+                .eq(Post::getId,postId).update();
+    }
+
+    @Override
+    public void decrFavoriteNumber(Long postId) {
+        lambdaUpdate().setSql("favorite_number=favorite_number-1")
+                .eq(Post::getId,postId).ge(Post::getFavoriteNumber,0).update();
+    }
+
     /**
      * 使用缓存来查询单个post
      */

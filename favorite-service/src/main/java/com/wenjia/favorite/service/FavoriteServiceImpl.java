@@ -11,6 +11,7 @@ import com.wenjia.common.context.BaseContext;
 import com.wenjia.common.exception.FavoriteException;
 import com.wenjia.common.exception.ThumbException;
 import com.wenjia.favorite.mapper.FavoriteMapper;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
@@ -32,6 +33,7 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper,Favorite> im
     private final RedissonClient redissonClient;
 
     @Override
+    @GlobalTransactional
     public void favorite(Long postId) {
         //检查数据,没有的话postService中会报错
         PostVO postVO = postService.getById(postId);
@@ -53,6 +55,7 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper,Favorite> im
                             .postId(postId).createTime(LocalDateTime.now()).build();
                     redisTemplate.opsForHash().increment(RedisConstant.POST_KEY+postId,"favoriteNumber",1L);
                     save(favorite);
+                    postService.incrFavoriteNumber(postId);
                 } finally {
                     lock.unlock();
                 }
@@ -65,6 +68,7 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper,Favorite> im
     }
 
     @Override
+    @GlobalTransactional
     public void cancelFavorite(Long postId) {
         //检查数据,没有的话service中会报错
         PostVO postVO = postService.getById(postId);
@@ -86,7 +90,7 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper,Favorite> im
                             .postId(postId).createTime(LocalDateTime.now()).build();
                     redisTemplate.opsForHash().increment(RedisConstant.POST_KEY+postId,"favoriteNumber",-1L);
                     lambdaUpdate().eq(Favorite::getUserId,userId).eq(Favorite::getPostId,postId).remove();
-                    //todo 到处都需要开启事务
+                    postService.decrFavoriteNumber(postId);
                 } finally {
                     lock.unlock();
                 }

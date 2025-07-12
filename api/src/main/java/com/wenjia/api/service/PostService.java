@@ -22,4 +22,8 @@ public interface PostService extends IService<Post> {
     void incrThumbNumber(Long id);
     //减少帖子点赞数
     void decrThumbNumber(Long id);
+    //增加帖子收藏数
+    void incrFavoriteNumber(Long postId);
+    //减少帖子收藏数
+    void decrFavoriteNumber(Long postId);
 }
