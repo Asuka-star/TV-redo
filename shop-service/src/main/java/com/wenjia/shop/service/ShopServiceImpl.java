@@ -260,6 +260,17 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                 .eq(Shop::getId,shopId).ge(Shop::getThumbNumber,0).update();
     }
 
+    @Override
+    public void incrFansNumber(Long shopId) {
+        lambdaUpdate().setSql("fans_number=fans_number+1").eq(Shop::getId,shopId).update();
+    }
+
+    @Override
+    public void decrFansNumber(Long shopId) {
+        lambdaUpdate().setSql("fans_number=fans_number-1")
+                .eq(Shop::getId,shopId).ge(Shop::getFansNumber,0).update();
+    }
+
     /**
      * 通过ShopPageQuery类中的参数来获取对应的key
      */

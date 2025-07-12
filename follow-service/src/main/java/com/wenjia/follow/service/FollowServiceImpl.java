@@ -10,12 +10,16 @@ import com.wenjia.api.domain.po.Follow;
 import com.wenjia.api.domain.vo.FollowVO;
 import com.wenjia.api.domain.vo.PageResult;
 import com.wenjia.api.service.FollowService;
+import com.wenjia.api.service.ShopService;
+import com.wenjia.api.service.UserService;
 import com.wenjia.common.constant.RedisConstant;
 import com.wenjia.common.context.BaseContext;
 import com.wenjia.common.exception.FollowException;
 import com.wenjia.common.util.RedisUtil;
 import com.wenjia.follow.mapper.FollowMapper;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -30,13 +34,18 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implements FollowService {
 
+    @DubboReference
+    private ShopService shopService;
+    @DubboReference
+    private UserService userService;
+
     //todo 消息发送者
     //private PostProducer postProducer;
     private final RedissonClient redissonClient;
     private final RedisTemplate<String,Object> redisTemplate;
 
     @Override
-    //todo 要开启事务将目标的关注数加一
+    @GlobalTransactional
     public void add(FollowDTO followDTO) {
         //进行操作限流
         limitFollow(followDTO);
@@ -64,8 +73,15 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implemen
                 try {
                     //进行数据库操作
                     save(follow);
+                    Long targetId = follow.getTargetId();
+                    //要开启事务将目标的关注数加一
+                    if(type==1){
+                        shopService.incrFansNumber(targetId);
+                    }else{
+                        userService.incrFansNumber(targetId);
+                    }
                     //删除缓存
-                    if(type==1) redisTemplate.delete(RedisConstant.SHOP_KEY+follow.getTargetId());
+                    if(type==1) redisTemplate.delete(RedisConstant.SHOP_KEY+ targetId);
                     //todo 发送异步消息进行收件箱拉取目标发布的动态
                     //postProducer.sendFollowMessage(follow);
                 } finally {
@@ -80,7 +96,6 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implemen
     }
 
     @Override
-    //todo 要开启事务将目标的关注数加一
     public void cancelFollow(FollowDTO followDTO) {
         //进行操作限流
         limitFollow(followDTO);
@@ -104,12 +119,19 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implemen
             if(lock.tryLock(1L,10L,TimeUnit.SECONDS)){
                 try {
                     //进行取消关注
+                    //要开启事务将目标的关注数加一
+                    Long targetId = follow.getTargetId();
                     lambdaUpdate().eq(Follow::getType,type)
                             .eq(Follow::getFansId,follow.getFansId())
-                            .eq(Follow::getTargetId,follow.getTargetId())
+                            .eq(Follow::getTargetId, targetId)
                             .remove();
+                    if(type==1){
+                        shopService.decrFansNumber(targetId);
+                    }else{
+                        userService.decrFansNumber(targetId);
+                    }
                     //删除缓存
-                    if(type==1)redisTemplate.delete(RedisConstant.SHOP_KEY+follow.getTargetId());
+                    if(type==1)redisTemplate.delete(RedisConstant.SHOP_KEY+ targetId);
                     //todo 发送异步消息进行收件箱除去目标发布的动态
                     //postProducer.sendCancelFollowMessage(follow);
                 } finally {

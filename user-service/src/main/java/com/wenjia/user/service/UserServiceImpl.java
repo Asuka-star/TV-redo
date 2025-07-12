@@ -57,6 +57,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public void incrFansNumber(Long id) {
+        lambdaUpdate().setSql("fans_number=fans_number+1").eq(User::getId,id).update();
+    }
+
+    @Override
+    public void decrFansNumber(Long id) {
+        lambdaUpdate().setSql("fans_number=fans_number-1").eq(User::getId,id).ge(User::getFansNumber,0).update();
+    }
+
+    @Override
     public void register(UserDTO userDTO) {
         String username = userDTO.getUsername();
         String password = userDTO.getPassword();

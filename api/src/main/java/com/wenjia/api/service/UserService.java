@@ -14,4 +14,10 @@ public interface UserService extends IService<User> {
 
     //查询粉丝数量
     Integer getFansNumberById(Integer id);
+
+    //增加粉丝数
+    void incrFansNumber(Long id);
+
+    //减少粉丝数
+    void decrFansNumber(Long id);
 }

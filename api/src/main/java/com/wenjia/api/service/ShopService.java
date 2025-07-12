@@ -37,4 +37,9 @@ public interface ShopService extends IService<Shop> {
     //减少商铺点赞数
     void decrThumbNumber(Long id);
 
+    //增加商铺粉丝数
+    void incrFansNumber(Long id);
+
+    //减少商铺粉丝数
+    void decrFansNumber(Long id);
 }
