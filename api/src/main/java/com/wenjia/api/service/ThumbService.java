@@ -27,4 +27,7 @@ public interface ThumbService extends IService<Thumb> {
 
     //查询用户点赞的所有评论id
     List<Long> thumbWithCommentIds(Long userId);
+
+    //删除商铺下的所有点赞
+    void deleteByShopId(Long shopId);
 }

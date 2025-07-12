@@ -31,4 +31,7 @@ public interface FollowService extends IService<Follow> {
 
     //查询用户关注的所有商铺和用户的id
     List<Long> getByUserId(Long userId);
+
+    //删除商铺下的所有关注
+    void deleteByShopId(Long shopId);
 }

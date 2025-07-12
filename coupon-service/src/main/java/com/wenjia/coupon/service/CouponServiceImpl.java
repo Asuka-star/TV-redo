@@ -277,6 +277,11 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         return lambdaQuery().eq(Coupon::getShopId,shopId).list();
     }
 
+    @Override
+    public void deleteByShopId(Long shopId) {
+        lambdaUpdate().eq(Coupon::getShopId,shopId).remove();
+    }
+
     /**
      * 修改缓存中的优惠券库存
      */

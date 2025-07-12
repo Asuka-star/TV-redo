@@ -170,6 +170,11 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implemen
                 .list().stream().map(Follow::getTargetId).toList();
     }
 
+    @Override
+    public void deleteByShopId(Long shopId) {
+        lambdaUpdate().eq(Follow::getTargetId,shopId).eq(Follow::getType,1).remove();
+    }
+
     //限制关注和取关操作
     private void limitFollow(FollowDTO followDTO){
         //进行操作限流

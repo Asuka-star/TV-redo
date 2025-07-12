@@ -141,4 +141,16 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper,Comment> imple
     public void incrThumbNumber(Long id) {
         lambdaUpdate().setSql("thumb_number=thumb_number+1").eq(Comment::getId,id).update();
     }
+
+    @Override
+    public void deleteByShopId(Long shopId) {
+        lambdaUpdate().eq(Comment::getTargetId,shopId).eq(Comment::getType,0).remove();
+    }
+
+    @Override
+    public void deleteByPostId(Long postId) {
+        lambdaUpdate().eq(Comment::getTargetId,postId).eq(Comment::getType,1).remove();
+    }
+
+
 }

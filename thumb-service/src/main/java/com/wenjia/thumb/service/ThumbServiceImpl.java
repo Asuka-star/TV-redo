@@ -207,6 +207,11 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
         return thumbWithTargetIds(userId,1);
     }
 
+    @Override
+    public void deleteByShopId(Long shopId) {
+        lambdaUpdate().eq(Thumb::getTargetId,shopId).eq(Thumb::getType,0).remove();
+    }
+
     public List<Long> thumbWithTargetIds(Long userId,Integer type){
         return lambdaQuery()
                 .eq(Thumb::getType,type)

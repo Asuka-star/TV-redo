@@ -49,7 +49,7 @@ public class ShopController {
 
     @Operation(summary = "根据商铺id来查询商铺")
     @GetMapping
-    //todo 注意这个param注解中要写方法参数的名字，因为我没有另外去搞所以反射获取不到参数名字
+    //注意这个param注解中要写方法参数的名字，因为我没有另外去搞所以反射获取不到参数名字
     public Result<ShopVO> getById(@Min(1)@RequestParam("id") Long id) {
         ShopVO shopVO = shopService.getByIdWithCache(id);
         return Result.success(shopVO);

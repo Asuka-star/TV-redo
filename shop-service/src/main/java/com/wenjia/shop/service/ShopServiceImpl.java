@@ -13,15 +13,13 @@ import com.wenjia.api.domain.po.Comment;
 import com.wenjia.api.domain.po.Coupon;
 import com.wenjia.api.domain.po.Shop;
 import com.wenjia.api.domain.vo.ShopVO;
-import com.wenjia.api.service.CouponService;
-import com.wenjia.api.service.FollowService;
-import com.wenjia.api.service.ShopService;
-import com.wenjia.api.service.ThumbService;
+import com.wenjia.api.service.*;
 import com.wenjia.common.constant.RedisConstant;
 import com.wenjia.common.context.BaseContext;
 import com.wenjia.common.exception.ShopException;
 import com.wenjia.api.domain.vo.PageResult;
 import com.wenjia.shop.mapper.ShopMapper;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -50,6 +48,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     private FollowService followService;
     @DubboReference
     private CouponService couponService;
+    @DubboReference
+    private CommentService commentService;
 
     private final RedisTemplate<String,Object> redisTemplate;
     private final RedissonClient redissonClient;
@@ -58,7 +58,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     public void register(ShopDTO shopDTO) {
         //封装成shop对象
         Shop shop = BeanUtil.copyProperties(shopDTO,Shop.class);
-        //todo 这里完成缓存的延时双删（分页的缓存），还有es来进行查询
+        //todo 还有es来进行查询
         //向数据库insert
         save(shop);
         //删除缓存
@@ -145,10 +145,11 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     }
 
     @Override
-    @Transactional
+    @GlobalTransactional
     public void deleteByShopId(Long ShopId) {
         //先判断当前用户是否是创建这个商铺的用户
         Shop shop = lambdaQuery().eq(Shop::getId,ShopId).one();
+        if(shop==null) throw new ShopException("商铺不存在无法进行删除");
         if (!Objects.equals(shop.getOwnerId(), BaseContext.getCurrentId())) {
             //当前用户不是店主，不能删除该店铺，抛出异常
             throw new ShopException("您不是此商铺的店主，无法删除此商铺");
@@ -163,11 +164,13 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                 throw new ShopException("当前商铺还有正在抢购的优惠券：" + coupon.getName());
             }
         }
-        //todo
-        // 还有这里需要分布式事务，还需要伤处这个商铺下面的优惠券，评论，关注，粉丝
-        // 好像这里还需要注意分布式的代理问题，不然删除商铺的时候，方法没有被代理，然后事务就没有注册到seata中
+        //这里需要分布式事务，还需要删除这个商铺下面的优惠券，评论，关注，点赞
         //进行删除店铺操作
         removeById(shop);
+        commentService.deleteByShopId(shop.getId());
+        couponService.deleteByShopId(shop.getId());
+        followService.deleteByShopId(shop.getId());
+        thumbService.deleteByShopId(shop.getId());
         redisTemplate.delete(RedisConstant.SHOP_KEY+shop.getId());
         //还要删除商铺分页查询的所有缓存
         deletePageCache();

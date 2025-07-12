@@ -21,6 +21,12 @@ public interface CommentService extends IService<Comment> {
     //减少评论点赞数
     void decrThumbNumber(Long id);
 
-    //怎加评论点赞数
+    //增加评论点赞数
     void incrThumbNumber(Long id);
+
+    //删除商铺下的所有评论
+    void deleteByShopId(Long shopId);
+
+    //删除帖子下的所有评论
+    void deleteByPostId(Long postId);
 }
