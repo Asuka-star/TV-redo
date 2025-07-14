@@ -29,7 +29,8 @@ public class PostController {
 
     @Operation(summary = "游标查询动态")
     @GetMapping("/page")
-    public Result<ScrollResult<Post>> queryPage(@RequestParam("cursor") Long cursor,@RequestParam("offset") Integer offset){
+    public Result<ScrollResult<Post>> queryPage(@RequestParam("cursor") Long cursor,
+                                                @RequestParam("offset") Integer offset){
         ScrollResult<Post> result=postService.queryPage(cursor,offset);
         return Result.success(result);
     }

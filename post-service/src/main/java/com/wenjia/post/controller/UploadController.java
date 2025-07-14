@@ -7,7 +7,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.Part;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.UUID;
 
 @RestController
@@ -16,15 +18,11 @@ import java.util.UUID;
 public class UploadController {
 
     @PutMapping
-    public Result<String> upload(@RequestParam(required = false) HttpServletRequest request){
+    public Result<String> upload(@RequestParam("file")MultipartFile file){
+        if(file.isEmpty()) throw new UploadException("未选择文件");
         try {
-            //获取文件
-            Part filePart = request.getPart("file");
-            if (filePart == null || filePart.getSize() == 0) {
-                throw new UploadException("未选择文件");
-            }
             //生成唯一文件名
-            String originalName = filePart.getSubmittedFileName();
+            String originalName = file.getName();
             String fileExt = originalName.substring(originalName.lastIndexOf("."));
             String fileName = UUID.randomUUID() + fileExt;
             //保存文件
@@ -32,9 +30,9 @@ public class UploadController {
             File uploadDir = new File(UPLOAD_DIR);
             if (!uploadDir.exists()) uploadDir.mkdirs();
             String filePath = UPLOAD_DIR +"/"+ fileName;
-            filePart.write(filePath);
+            file.transferTo(new File(filePath));
             //返回访问URL
-            String accessUrl = "http://localhost:8080/TopView_war/uploads/" + fileName;
+            String accessUrl = "http://localhost:8080/uploads/" + fileName;
             return Result.success(accessUrl);
         } catch (Exception e) {
             throw new RuntimeException("上传失败");
