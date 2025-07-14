@@ -18,6 +18,7 @@ import com.wenjia.common.exception.BaseException;
 import com.wenjia.common.exception.CouponException;
 import com.wenjia.common.util.RedisUtil;
 import com.wenjia.coupon.mapper.CouponMapper;
+import com.wenjia.coupon.util.RedisId;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
@@ -172,7 +173,9 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         }
         //返回零说明抢购成功
         //todo 注意这里的订单id问题，我这里没有放入id
+        Long id = RedisId.createId(redisTemplate, RedisConstant.ORDER_KEY);
         Order order = Order.builder()
+                .id(id)
                 .userId(userId)
                 .couponId(couponId)
                 .createTime(LocalDateTime.now())

@@ -1,6 +1,7 @@
 package com.wenjia.coupon.service;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wenjia.api.domain.po.Order;
 import com.wenjia.api.domain.vo.OrderVO;
@@ -20,13 +21,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public List<OrderVO> getOwnedShops() {
         List<Order> orders = lambdaQuery().eq(Order::getUserId, BaseContext.getCurrentId()).list();
-        return orders.stream().map(o -> {
-            return OrderVO.builder()
-                    .id(o.getId())
-                    .couponId(o.getCouponId())
-                    .status(o.getStatus())
-                    .createTime(o.getCreateTime())
-                    .build();
-        }).collect(Collectors.toList());
+        return orders.stream().map(o -> BeanUtil.copyProperties(o,OrderVO.class)).collect(Collectors.toList());
     }
 }

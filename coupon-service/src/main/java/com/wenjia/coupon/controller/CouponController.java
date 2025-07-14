@@ -28,8 +28,8 @@ public class CouponController {
     }
 
     @Operation(summary = "抢购优惠券")
-    @PostMapping("/seckill")
-    public Result<Long> seckill(@RequestParam("couponId") Long couponId){
+    @PostMapping("/secKill")
+    public Result<Long> secKill(@RequestParam("couponId") Long couponId){
         Long orderId=couponService.seckill(couponId);
         return Result.success(orderId);
     }
@@ -57,7 +57,8 @@ public class CouponController {
 
     @Operation(summary = "更改优惠券库存")
     @PutMapping("/stock")
-    public Result<Void> updateStock(@RequestParam("couponId") Long couponId,@RequestParam("stockChange") Integer stockChange){
+    public Result<Void> updateStock(@RequestParam("couponId") Long couponId,
+                                    @RequestParam("stockChange") Integer stockChange){
         couponService.updateStock(couponId,stockChange);
         return Result.success();
     }
