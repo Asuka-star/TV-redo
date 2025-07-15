@@ -31,6 +31,8 @@ public class PostController {
     @GetMapping("/page")
     public Result<ScrollResult<Post>> queryPage(@RequestParam("cursor") Long cursor,
                                                 @RequestParam("offset") Integer offset){
+        //todo 这里会一直查下去，有问题
+        // 习惯着养成一个良好的git提交习惯
         ScrollResult<Post> result=postService.queryPage(cursor,offset);
         return Result.success(result);
     }

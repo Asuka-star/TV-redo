@@ -172,7 +172,6 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             throw new CouponException("您已经买过该优惠券了");
         }
         //返回零说明抢购成功
-        //todo 注意这里的订单id问题，我这里没有放入id
         Long id = RedisId.createId(redisTemplate, RedisConstant.ORDER_KEY);
         Order order = Order.builder()
                 .id(id)
@@ -192,6 +191,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         return id;
     }
 
+    //todo 限流
 //    /**
 //     * 初始化限流规则
 //     */

@@ -34,8 +34,6 @@ public class UploadController {
             String fileName = UUID.randomUUID() + fileExt;
             //保存文件
             String UPLOAD_DIR = "E:/uploads";
-            File uploadDir = new File(UPLOAD_DIR);
-            if (!uploadDir.exists()) uploadDir.mkdirs();
             Path path= Paths.get(UPLOAD_DIR,fileName);
             file.transferTo(path);
             //返回访问URL

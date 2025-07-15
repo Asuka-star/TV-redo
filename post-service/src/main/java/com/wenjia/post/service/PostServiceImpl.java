@@ -15,11 +15,13 @@ import com.wenjia.common.constant.Constant;
 import com.wenjia.common.constant.RedisConstant;
 import com.wenjia.common.context.BaseContext;
 import com.wenjia.common.exception.PostException;
+import com.wenjia.post.annotation.PostCacheEvict;
 import com.wenjia.post.mapper.PostMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -110,15 +112,16 @@ public class PostServiceImpl extends ServiceImpl<PostMapper,Post> implements Pos
             List<Long> shopIds = followService.followWithShopIds(userId);
             //查询用户关注的商铺的动态
             List<Post> shops = lambdaQuery().le(Post::getCreateTime, time).eq(Post::getType, 1)
-                    .in(Post::getPublisherId, shopIds).orderByDesc(Post::getCreateTime).last("limit " + (3 - postList.size())).list();
+                    .in(Post::getPublisherId, shopIds).orderByDesc(Post::getCreateTime).last("limit " + (3 - postList.size()+offset)).list();
             //查询用户关注用户的列表
             List<Long> userIds = followService.followWithUserIds(userId);
             //查询用户关注的用户的动态
             List<Post> users = lambdaQuery().le(Post::getCreateTime, time).eq(Post::getType, 0)
-                    .in(Post::getPublisherId, userIds).orderByDesc(Post::getCreateTime).last("limit " + (3 - postList.size())).list();
+                    .in(Post::getPublisherId, userIds).orderByDesc(Post::getCreateTime).last("limit " + (3 - postList.size()+offset)).list();
             //再使用stream流进行合并
             List<Post> posts = Stream.of(shops, users).flatMap(Collection::stream)//再看一下下面的那个排序写对了没
                     .sorted((a, b) -> a.getCreateTime().isBefore(b.getCreateTime()) ? -1 : 1)
+                    .skip(offset)
                     .limit(3 - postList.size()).toList();
             for(Post post:posts){
                 postList.add(post);
@@ -157,35 +160,45 @@ public class PostServiceImpl extends ServiceImpl<PostMapper,Post> implements Pos
         return postVO;
     }
 
+    //todo 我感觉正确的点赞并不是给点赞单独搞一个模块，因为这样需要区分点赞的类型
+    // 还有就是点赞模块点了之后，对应的目标模块依旧需要进行点赞数的增加
+    // 所以应该是每个模块对应的数据库都有一个点赞表来记录当前模块的点赞
+
     @Override
+    @PostCacheEvict
     public void incrCommentNumber(Long postId) {
         lambdaUpdate().setSql("comment_number=comment_number+1").eq(Post::getId,postId).update();
     }
 
     @Override
+    @PostCacheEvict
     public void decrCommentNumber(Long postId) {
         lambdaUpdate().setSql("comment_number=comment_number-1")
                 .eq(Post::getId,postId).ge(Post::getCommentNumber,0).update();
     }
 
     @Override
+    @PostCacheEvict
     public void incrThumbNumber(Long postId) {
         lambdaUpdate().setSql("thumb_number=thumb_number+1").eq(Post::getId,postId).update();
     }
 
     @Override
+    @PostCacheEvict
     public void decrThumbNumber(Long postId) {
         lambdaUpdate().setSql("thumb_number=thumb_number-1")
                 .eq(Post::getId,postId).ge(Post::getThumbNumber,0).update();
     }
 
     @Override
+    @PostCacheEvict
     public void incrFavoriteNumber(Long postId) {
         lambdaUpdate().setSql("favorite_number=favorite_number-1")
                 .eq(Post::getId,postId).update();
     }
 
     @Override
+    @PostCacheEvict
     public void decrFavoriteNumber(Long postId) {
         lambdaUpdate().setSql("favorite_number=favorite_number-1")
                 .eq(Post::getId,postId).ge(Post::getFavoriteNumber,0).update();
@@ -220,6 +233,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper,Post> implements Pos
      * 检查前端传递的值
      */
     private void checkFormat(PostDTO postDTO){
+        //todo 还有就是说，别人是怎么来检验前端传递的值的
+        // 不然每次都需要来判断一下用户是否存在有点蠢啊
         //获取字段
         Long publisherId = postDTO.getPublisherId();
         Integer publisherType = postDTO.getPublisherType();
