@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@TableName("follow")
+@TableName("orders")
 public class Order implements Serializable {
     //订单id
     @TableId

@@ -47,7 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
     }
 
-    public Integer getFansNumberById(Integer id) {
+    public Integer getFansNumberById(Long id) {
         Long currentId = BaseContext.getCurrentId();
         if(currentId!=null&&!Objects.equals(id, currentId)) throw new UserException("用户信息异常");
         User user = getById(id);

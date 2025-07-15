@@ -13,7 +13,7 @@ public interface UserService extends IService<User> {
     void register(UserDTO userDTO);
 
     //查询粉丝数量
-    Integer getFansNumberById(Integer id);
+    Integer getFansNumberById(Long id);
 
     //增加粉丝数
     void incrFansNumber(Long id);

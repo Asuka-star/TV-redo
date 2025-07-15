@@ -189,7 +189,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             RedisUtil.rollBackStock(redisTemplate,order.getCouponId(), order.getUserId());
             throw new CouponException("RRR服务繁忙请稍后再试");
         }
-        return 1L;
+        return id;
     }
 
 //    /**

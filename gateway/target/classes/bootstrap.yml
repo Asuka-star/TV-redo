@@ -9,6 +9,9 @@ spring:
         group: SPRING_CLOUD_GROUP
       config:
         namespace: 123
+        file-extension: yaml
+        shared-configs:
+          - data-id: shared-log.yaml # 共享日志配置
     gateway:
       discovery:
         locator:

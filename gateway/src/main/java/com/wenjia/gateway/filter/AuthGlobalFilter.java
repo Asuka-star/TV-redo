@@ -3,6 +3,8 @@ package com.wenjia.gateway.filter;
 import com.wenjia.gateway.config.JwtConfig;
 import com.wenjia.gateway.config.RequestPathConfig;
 import com.wenjia.gateway.utils.JwtUtil;
+import com.wenjia.gateway.utils.MyRequestMethod;
+import com.wenjia.gateway.utils.MyRequestPath;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -18,6 +20,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import javax.lang.model.element.VariableElement;
 import java.lang.annotation.Annotation;
 import java.util.List;
 
@@ -27,15 +30,14 @@ import java.util.List;
 public class AuthGlobalFilter implements GlobalFilter, Order {
 
     private final JwtConfig jwtConfig;
-    private final RequestPathConfig requestPathConfig;
-    private final AntPathMatcher antPathMatcher=new AntPathMatcher();
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         //获取request
         ServerHttpRequest request = exchange.getRequest();
         RequestPath path = request.getPath();
-        if(isExclude(path.toString())){
+        String method = request.getMethod().toString();
+        if(isExclude(path.toString(),method)){
             //不需要进行拦截
             return chain.filter(exchange);
         }
@@ -52,7 +54,7 @@ public class AuthGlobalFilter implements GlobalFilter, Order {
             userId= Long.parseLong(claims.get("userId").toString());
         } catch (RuntimeException e) {
             //解析token失败，再来判断一下当前路径是可以不用传递token的
-            if(isMay(path.toString())){
+            if(isMay(path.toString(),method)){
                 return chain.filter(exchange);
             }
             ServerHttpResponse response = exchange.getResponse();
@@ -68,18 +70,14 @@ public class AuthGlobalFilter implements GlobalFilter, Order {
         return chain.filter(serverWebExchange);
     }
 
-    private boolean isMay(String path) {
-        for(String mayPath:requestPathConfig.getMayPaths()){
-            if(antPathMatcher.match(mayPath,path)) return true;
-        }
-        return false;
+    private boolean isMay(String path,String method) {
+        return RequestPathConfig.mayRequiredRequestPathSet
+                .contains(new MyRequestPath(path, MyRequestMethod.valueOf(method)));
     }
 
-    private boolean isExclude(String path) {
-        for(String excludePath:requestPathConfig.getExcludePaths()){
-            if(antPathMatcher.match(excludePath,path))return true;
-        }
-        return false;
+    private boolean isExclude(String path,String method) {
+        return RequestPathConfig.requiredRequestPathSet
+                .contains(new MyRequestPath(path, MyRequestMethod.valueOf(method)));
     }
 
     @Override

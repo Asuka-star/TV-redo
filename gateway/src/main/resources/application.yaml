@@ -5,13 +5,3 @@ wenjia:
   jwt:
     duration: 10000000000
     secret-key: wenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjia;
-  auth:
-    exclude-paths:
-      - /user/login
-      - /user
-      - /shop
-      - /coupon
-      - /coupon/stock
-    may-paths:
-      - /comment/page
-      - /shop/page

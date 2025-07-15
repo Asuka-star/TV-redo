@@ -34,7 +34,7 @@ public class ShopController {
 
     @Operation(summary = "分页查询商铺")
     @GetMapping("/page")
-    public Result<PageResult<ShopVO>> page(@Valid @RequestBody ShopPageQuery shopPageQuery) {
+    public Result<PageResult<ShopVO>> page(@Valid ShopPageQuery shopPageQuery) {
         PageResult<ShopVO> shopVOPageResult = shopService.pageQuery(shopPageQuery);
         //返回值
         return Result.success(shopVOPageResult);

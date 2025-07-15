@@ -18,6 +18,8 @@ import com.wenjia.common.constant.RedisConstant;
 import com.wenjia.common.context.BaseContext;
 import com.wenjia.common.exception.ShopException;
 import com.wenjia.api.domain.vo.PageResult;
+import com.wenjia.shop.annotation.PageCacheEvict;
+import com.wenjia.shop.annotation.ShopCacheEvict;
 import com.wenjia.shop.mapper.ShopMapper;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
@@ -55,14 +57,14 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     private final RedissonClient redissonClient;
 
     @Override
+    @PageCacheEvict
     public void register(ShopDTO shopDTO) {
         //封装成shop对象
         Shop shop = BeanUtil.copyProperties(shopDTO,Shop.class);
         //todo 还有es来进行查询
         //向数据库insert
+        shop.setOwnerId(BaseContext.getCurrentId());
         save(shop);
-        //删除缓存
-        deletePageCache();
     }
 
     @Override
@@ -146,6 +148,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
 
     @Override
     @GlobalTransactional
+    @PageCacheEvict
+    @ShopCacheEvict
     public void deleteByShopId(Long ShopId) {
         //先判断当前用户是否是创建这个商铺的用户
         Shop shop = lambdaQuery().eq(Shop::getId,ShopId).one();
@@ -171,34 +175,6 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
         couponService.deleteByShopId(shop.getId());
         followService.deleteByShopId(shop.getId());
         thumbService.deleteByShopId(shop.getId());
-        redisTemplate.delete(RedisConstant.SHOP_KEY+shop.getId());
-        //还要删除商铺分页查询的所有缓存
-        deletePageCache();
-    }
-
-    private void deletePageCache() {
-        String keyPattern="shopPage:*";
-        int batchSize=1000;
-        List<String> KeysToDelete=new ArrayList<>(batchSize);
-        //获取游标
-        Cursor<String> cursor = redisTemplate.scan(ScanOptions.scanOptions()
-                .match(keyPattern)
-                .count(100)
-                .build());
-        //游标不断向后走
-        while(cursor.hasNext()){
-            String key=cursor.next();
-            KeysToDelete.add(key);
-            //如果达到了容量，就进行删除
-            if(KeysToDelete.size()>=batchSize){
-                redisTemplate.delete(KeysToDelete);
-                KeysToDelete.clear();
-            }
-        }
-        //删除集合中还剩余的key
-        if(!KeysToDelete.isEmpty()){
-            redisTemplate.delete(KeysToDelete);
-        }
     }
 
     @Override
@@ -239,33 +215,45 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     }
 
     @Override
+    @PageCacheEvict
+    @ShopCacheEvict
     public void incrCommentNumber(Long shopId) {
         lambdaUpdate().setSql("comment_number=comment_number+1").eq(Shop::getId,shopId).update();
     }
 
     @Override
+    @PageCacheEvict
+    @ShopCacheEvict
     public void decrCommentNumber(Long shopId) {
         lambdaUpdate().setSql("comment_number=comment_number-1")
                 .eq(Shop::getId,shopId).ge(Shop::getCommentNumber,0).update();
     }
 
     @Override
+    @PageCacheEvict
+    @ShopCacheEvict
     public void incrThumbNumber(Long shopId) {
         lambdaUpdate().setSql("thumb_number=thumb_number+1").eq(Shop::getId,shopId).update();
     }
 
     @Override
+    @PageCacheEvict
+    @ShopCacheEvict
     public void decrThumbNumber(Long shopId) {
         lambdaUpdate().setSql("thumb_number=thumb_number-1")
                 .eq(Shop::getId,shopId).ge(Shop::getThumbNumber,0).update();
     }
 
     @Override
+    @PageCacheEvict
+    @ShopCacheEvict
     public void incrFansNumber(Long shopId) {
         lambdaUpdate().setSql("fans_number=fans_number+1").eq(Shop::getId,shopId).update();
     }
 
     @Override
+    @PageCacheEvict
+    @ShopCacheEvict
     public void decrFansNumber(Long shopId) {
         lambdaUpdate().setSql("fans_number=fans_number-1")
                 .eq(Shop::getId,shopId).ge(Shop::getFansNumber,0).update();
@@ -283,4 +271,13 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                 + shopPageQuery.getUserId() + ":"
                 + shopPageQuery.getName();
     }
+
+    //todo还有就是点赞计数那里缓存会没有过期时间
+    // 感觉这里的分页数据的缓存没有什么用啊，随便点个赞缓存就会被删
+    // 看看到时候要不要将点赞数单独搞一个缓存
+    // 分页查询的时候遍历每一个商铺，商铺的点赞数没有缓存，就把当前的缓存起来
+    // 点赞有缓存的商铺就把缓存替换掉结果中原来的点赞数
+    // 然后之后的每次点赞也是修改缓存中的点赞数
+    // 最后在搞一个定时器去定期将缓存中的点赞数写到数据库中，完成最终一致性
+
 }

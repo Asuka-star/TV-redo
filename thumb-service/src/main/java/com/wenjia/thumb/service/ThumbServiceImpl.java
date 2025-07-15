@@ -75,13 +75,12 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
                     redisTemplate.opsForValue().set(hasThumbKey,1,RedisConstant.EXPIRE_TIME,TimeUnit.MINUTES);
 
                     //执行lua脚本
-                    List<String> keys=new ArrayList<>();
-                    keys.add(thumbCountKey);
-                    RedisUtil.incrBy(redisTemplate,keys,1,String.valueOf(TimeUnit.MINUTES.toSeconds(RedisConstant.EXPIRE_TIME)));
+                    RedisUtil.incrBy(redisTemplate,thumbCountKey,1,TimeUnit.MINUTES.toSeconds(RedisConstant.EXPIRE_TIME));
 
                     //数据库中的点赞表新增数据
                     Thumb thumb=BeanUtil.copyProperties(thumbDTO,Thumb.class);
                     thumb.setCreateTime(LocalDateTime.now());
+                    thumb.setUserId(BaseContext.getCurrentId());
                     //需要开启事务进行更新商铺，评论，帖子的点赞数
                     save(thumb);
                     if(type==0) {
@@ -111,6 +110,7 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
     }
 
     @Override
+    @GlobalTransactional
     public void cancelThumb(ThumbDTO thumbDTO) {
         //检查数据
         Integer type = thumbDTO.getType();
@@ -132,10 +132,7 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
                     redisTemplate.opsForValue().set(hasThumbKey,0,RedisConstant.EXPIRE_TIME,TimeUnit.MINUTES);
 
                     //执行lua脚本
-                    List<String> keys=new ArrayList<>();
-                    keys.add(thumbCountKey);
-                    RedisUtil.decrBy(redisTemplate,keys,1,String.valueOf(TimeUnit.MINUTES.toSeconds(RedisConstant.EXPIRE_TIME)));
-
+                    RedisUtil.decrBy(redisTemplate,thumbCountKey,1,TimeUnit.MINUTES.toSeconds(RedisConstant.EXPIRE_TIME));
 
                     //数据库中的点赞表删除数据
                     Thumb thumb = Thumb.builder()
@@ -170,7 +167,9 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
     @Override
     public boolean hasThumb(Integer type, Long userId, Long targetId) {
         String hasThumbKey= RedisConstant.THUMB_KEY+type+":"+userId+":"+ targetId;
-        String value = Objects.requireNonNull(redisTemplate.opsForValue().get(hasThumbKey)).toString();
+        Object o = redisTemplate.opsForValue().get(hasThumbKey);
+        String value=null;
+        if(o!=null)value=o.toString();
         if(value!=null) return "1".equals(value);
         //缓存未命中，查询数据库
         Long count = lambdaQuery().eq(Thumb::getType, type).eq(Thumb::getUserId, userId).eq(Thumb::getTargetId, targetId).count();

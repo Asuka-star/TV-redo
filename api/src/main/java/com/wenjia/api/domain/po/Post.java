@@ -2,6 +2,7 @@ package com.wenjia.api.domain.po;
 
 
 import com.alibaba.fastjson2.annotation.JSONField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@TableName("post")
 public class Post implements Serializable {
     //帖子id
     private Long id;

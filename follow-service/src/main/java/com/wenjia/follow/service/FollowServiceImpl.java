@@ -47,8 +47,6 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implemen
     @Override
     @GlobalTransactional
     public void add(FollowDTO followDTO) {
-        //进行操作限流
-        limitFollow(followDTO);
         //判断关注数量是否到达上线
         Long followNumber = getFollowNumber(followDTO.getFansId());
         if(followNumber>1000) throw new FollowException("关注数量已经达到上线");
@@ -98,8 +96,7 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implemen
     @Override
     @GlobalTransactional
     public void cancelFollow(FollowDTO followDTO) {
-        //进行操作限流
-        limitFollow(followDTO);
+        //todo 进行操作限流
         //检查传递类型
         Integer type = followDTO.getType();
         if(!(type==0||type==1)) throw new FollowException("没用该类型的目标");
@@ -196,16 +193,6 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper,Follow> implemen
     @Override
     public void deleteByShopId(Long shopId) {
         lambdaUpdate().eq(Follow::getTargetId,shopId).eq(Follow::getType,1).remove();
-    }
-
-    //限制关注和取关操作
-    private void limitFollow(FollowDTO followDTO){
-        //进行操作限流
-        String key=RedisConstant.FOLLOW_LIMIT_KEY+followDTO.getFansId()
-                +":"+followDTO.getType()+":"+followDTO.getTargetId();
-        if(!RedisUtil.actionLimit(redisTemplate,key,5,10)){
-            throw new FollowException("请勿频繁操作");
-        }
     }
 
     private Long getFollowNumber(Long fansId){
