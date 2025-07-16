@@ -46,6 +46,8 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final RedissonClient redissonClient;
+    private final RedisUtil redisUtil;
+    private final RedisId redisId;
 
     //todo 消息发送
     //private OrderProducer orderProducer;
@@ -165,14 +167,14 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         //当前用户id
         Long userId = BaseContext.getCurrentId();
         //检查优惠券库存和用户是否已经购买过了
-        long res = RedisUtil.checkSecKill(redisTemplate,couponId, userId, getExpireTimeByEndTime(coupon.getEndTime()));
+        long res = redisUtil.checkSecKill(couponId, userId, getExpireTimeByEndTime(coupon.getEndTime()));
         if (res == 1L) {
             throw new CouponException("库存不足,已经被抢购完了");
         } else if (res == 2L) {
             throw new CouponException("您已经买过该优惠券了");
         }
         //返回零说明抢购成功
-        Long id = RedisId.createId(redisTemplate, RedisConstant.ORDER_KEY);
+        Long id = redisId.createId(RedisConstant.ORDER_KEY);
         Order order = Order.builder()
                 .id(id)
                 .userId(userId)
@@ -185,7 +187,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             //orderProducer.sendOrderCreateMessage(order);
         } catch (Exception e) {
             //信息发送失败进行缓存数据的回退
-            RedisUtil.rollBackStock(redisTemplate,order.getCouponId(), order.getUserId());
+            redisUtil.rollBackStock(order.getCouponId(), order.getUserId());
             throw new CouponException("RRR服务繁忙请稍后再试");
         }
         return id;
@@ -289,7 +291,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
      * 修改缓存中的优惠券库存
      */
     public void updateStockWithRedis(Long couponId, Integer stockChange) {
-        long res=RedisUtil.updateStock(redisTemplate,couponId,stockChange);
+        long res=redisUtil.updateStock(couponId,stockChange);
         if (res == 1) {
             throw new CouponException("优惠券已经被删除了");
         } else if (res == 2) {

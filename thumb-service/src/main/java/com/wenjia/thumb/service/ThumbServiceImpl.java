@@ -48,6 +48,7 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
 
     private final RedissonClient redissonClient;
     private final RedisTemplate<String,Object> redisTemplate;
+    private final RedisUtil redisUtil;
 
     @Override
     @GlobalTransactional
@@ -75,7 +76,7 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
                     redisTemplate.opsForValue().set(hasThumbKey,1,RedisConstant.EXPIRE_TIME,TimeUnit.MINUTES);
 
                     //执行lua脚本
-                    RedisUtil.incrBy(redisTemplate,thumbCountKey,1,TimeUnit.MINUTES.toSeconds(RedisConstant.EXPIRE_TIME));
+                    redisUtil.incrBy(thumbCountKey,1,TimeUnit.MINUTES.toSeconds(RedisConstant.EXPIRE_TIME));
 
                     //数据库中的点赞表新增数据
                     Thumb thumb=BeanUtil.copyProperties(thumbDTO,Thumb.class);
@@ -132,7 +133,7 @@ public class ThumbServiceImpl extends ServiceImpl<ThumbMapper,Thumb> implements 
                     redisTemplate.opsForValue().set(hasThumbKey,0,RedisConstant.EXPIRE_TIME,TimeUnit.MINUTES);
 
                     //执行lua脚本
-                    RedisUtil.decrBy(redisTemplate,thumbCountKey,1,TimeUnit.MINUTES.toSeconds(RedisConstant.EXPIRE_TIME));
+                    redisUtil.decrBy(thumbCountKey,1,TimeUnit.MINUTES.toSeconds(RedisConstant.EXPIRE_TIME));
 
                     //数据库中的点赞表删除数据
                     Thumb thumb = Thumb.builder()

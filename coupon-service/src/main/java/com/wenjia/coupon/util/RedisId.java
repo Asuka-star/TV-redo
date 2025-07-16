@@ -1,7 +1,9 @@
 package com.wenjia.coupon.util;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.scripting.support.ResourceScriptSource;
 import org.springframework.stereotype.Component;
@@ -13,15 +15,16 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Component
+@RequiredArgsConstructor
 public class RedisId {
     //定义一个开始时间戳，可以延长使用时间
-    private static final long BEGIN_TIMESTAMP = 1744758983L;
+    private final long BEGIN_TIMESTAMP = 1744758983L;
     //设定过期时间为一个月
-    private static final String EXPIRE_TIME = "2592000";
+    private final String EXPIRE_TIME = "2592000";
     //维护上一次更新的时间
-    private static final AtomicLong lastTimestamp = new AtomicLong(0L);
-
-    public static Long createId(RedisTemplate<String,Object> redisTemplate,String keyPrefix) {
+    private  final AtomicLong lastTimestamp = new AtomicLong(0L);
+    private final StringRedisTemplate redisTemplate;
+    public Long createId(String keyPrefix) {
         //生成时间戳
         long nowTimestamp = System.currentTimeMillis()/1000;
         long timestamp = nowTimestamp - BEGIN_TIMESTAMP;
