@@ -35,9 +35,7 @@ public class CouponDTO implements Serializable {
     //减免金额
     private BigDecimal reduceAmount;
     //抢购结束时间
-    @JSONField(format = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime beginTime;
     //抢购开始时间
-    @JSONField(format = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
 }

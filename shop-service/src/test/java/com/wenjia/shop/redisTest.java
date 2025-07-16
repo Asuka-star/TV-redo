@@ -1,5 +1,6 @@
 package com.wenjia.shop;
 
+import com.wenjia.common.constant.RedisConstant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,22 +16,18 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @SpringBootTest
 public class redisTest {
 
-    RedisTemplate<String,Object> redisTemplate;
+    //common模块里面已经配置好了的
     @Autowired
-    RedisConnectionFactory connectionFactory;
+    RedisTemplate<String,Object> redisTemplate;
 
-    @BeforeEach
-    public void bef(){
-        redisTemplate= new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(connectionFactory);
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-    }
 
-    //todo 看看我写的这个测试类能不能正常运行吧
     @Test
     public void teeet(){
-        redisTemplate.opsForValue().set("1233123",null);
+        Object o = redisTemplate.opsForValue().get(RedisConstant.COUPON_STOCK_KEY + "1945384382848655361");
+        if(o instanceof Integer){
+            System.out.println(123);
+        }
+        System.out.println(o);
     }
 
 }

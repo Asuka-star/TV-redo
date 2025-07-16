@@ -2,3 +2,4 @@ com.wenjia.common.config.MyBatisConfig
 com.wenjia.common.config.ExceptionConfig
 com.wenjia.common.config.RedisConfig
 com.wenjia.common.config.MvcConfig
+com.wenjia.common.config.JacksonConfig

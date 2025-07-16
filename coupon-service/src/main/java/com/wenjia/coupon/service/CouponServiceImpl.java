@@ -83,12 +83,12 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     public Integer getStock(Long couponId) {
         //只查询正在抢购的优惠券
         String key = RedisConstant.COUPON_STOCK_KEY + couponId;
-        String value = (String) redisTemplate.opsForValue().get(key);
+        Integer value = (Integer) redisTemplate.opsForValue().get(key);
         if (value == null) {
             throw new CouponException("缓存异常,没有id为" + couponId + "的优惠券缓存");
         }
         try {
-            return Integer.parseInt(value);
+            return value;
         } catch (NumberFormatException e) {
             throw new CouponException("缓存异常,id为" + couponId + "的优惠券缓存存入的值有误");
         }
