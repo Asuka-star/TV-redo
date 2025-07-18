@@ -1,7 +1,0 @@
-com\wenjia\coupon\controller\OrderController.class
-com\wenjia\coupon\CouponApplication.class
-com\wenjia\coupon\service\OrderServiceImpl.class
-com\wenjia\coupon\mapper\OrderMapper.class
-com\wenjia\coupon\service\CouponServiceImpl.class
-com\wenjia\coupon\controller\CouponController.class
-com\wenjia\coupon\mapper\CouponMapper.class

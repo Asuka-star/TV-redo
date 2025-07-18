@@ -18,6 +18,7 @@ import com.wenjia.common.exception.BaseException;
 import com.wenjia.common.exception.CouponException;
 import com.wenjia.common.util.RedisUtil;
 import com.wenjia.coupon.mapper.CouponMapper;
+import com.wenjia.coupon.mq.producer.OrderProducer;
 import com.wenjia.coupon.util.RedisId;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -48,10 +49,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     private final RedissonClient redissonClient;
     private final RedisUtil redisUtil;
     private final RedisId redisId;
-
-    //todo 消息发送
-    //private OrderProducer orderProducer;
-
+    private final OrderProducer orderProducer;
     //todo sentinel 的限流操作
     /*public CouponServiceImpl(){
         initFlowRules();
@@ -115,7 +113,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                         return doubleCheckValue.isEmpty() ? null : JSON.parseObject(doubleCheckValue, Coupon.class);
                     }
                     //查询数据库
-                    Coupon coupon =lambdaQuery().eq(Coupon::getId,couponId).one();
+                    Coupon coupon = lambdaQuery().eq(Coupon::getId, couponId).one();
                     //缓存数据
                     if (coupon == null) {
                         redisTemplate.opsForValue().set(
@@ -147,7 +145,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
-    public Long seckill(Long couponId) {
+    public Long secKill(Long couponId) {
         //查询优惠券
         Coupon coupon = getById(couponId);
         //查找到之后需要判断是否存在这么一个优惠券和是否是在抢购时间
@@ -183,8 +181,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                 .build();
         //order创建的数据库操作并扣减了库存
         try {
-            //todo 发送信息
-            //orderProducer.sendOrderCreateMessage(order);
+            orderProducer.sendOrderCreateMessage(order);
         } catch (Exception e) {
             //信息发送失败进行缓存数据的回退
             redisUtil.rollBackStock(order.getCouponId(), order.getUserId());
@@ -231,7 +228,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         //可以进行删除，进行延迟双删,需要删除优惠券信息和优惠券库存信息
         String couponKey = RedisConstant.COUPON_KEY + couponId;
         String stockKey = RedisConstant.COUPON_STOCK_KEY + couponId;
-        lambdaUpdate().eq(Coupon::getId,couponId).remove();
+        lambdaUpdate().eq(Coupon::getId, couponId).remove();
         redisTemplate.delete(couponKey);
         redisTemplate.delete(stockKey);
     }
@@ -247,7 +244,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         //店主一次只能进行一次
         RLock lock = redissonClient.getLock(RedisConstant.UPDATE_STOCK_KEY + couponId);
         try {
-            if (lock.tryLock(2L,10L,TimeUnit.SECONDS)) {
+            if (lock.tryLock(2L, 10L, TimeUnit.SECONDS)) {
                 try {
                     Coupon coupon = checkValid(couponId);
                     //判断优惠券抢购时间是否已经结束了
@@ -278,20 +275,30 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
+    public void reduceStock(Long couponId) {
+        couponMapper.reduceStock(couponId);
+    }
+
+    @Override
+    public void incrStock(Long couponId) {
+        couponMapper.incrStock(couponId);
+    }
+
+    @Override
     public List<Coupon> getByShopId(Long shopId) {
-        return lambdaQuery().eq(Coupon::getShopId,shopId).list();
+        return lambdaQuery().eq(Coupon::getShopId, shopId).list();
     }
 
     @Override
     public void deleteByShopId(Long shopId) {
-        lambdaUpdate().eq(Coupon::getShopId,shopId).remove();
+        lambdaUpdate().eq(Coupon::getShopId, shopId).remove();
     }
 
     /**
      * 修改缓存中的优惠券库存
      */
     public void updateStockWithRedis(Long couponId, Integer stockChange) {
-        long res=redisUtil.updateStock(couponId,stockChange);
+        long res = redisUtil.updateStock(couponId, stockChange);
         if (res == 1) {
             throw new CouponException("优惠券已经被删除了");
         } else if (res == 2) {

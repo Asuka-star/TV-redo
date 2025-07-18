@@ -37,7 +37,7 @@ public class RedisUtil {
     public void rollBackStock(Long couponId,Long userId){
         DefaultRedisScript<Object> redisScript = new DefaultRedisScript<>();
         redisScript.setScriptSource(new ResourceScriptSource(new ClassPathResource("redis/rollBackStock.lua")));
-        redisTemplate.execute(redisScript,List.of(RedisConstant.COUPON_KEY+couponId,RedisConstant.SECKILL_KEY+couponId),
+        redisTemplate.execute(redisScript,List.of(RedisConstant.COUPON_STOCK_KEY+couponId,RedisConstant.SECKILL_KEY+couponId),
                 "1",userId.toString());
     }
 

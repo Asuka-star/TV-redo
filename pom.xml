@@ -29,7 +29,7 @@
         <nacos.version>2.3.0</nacos.version>
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <mysql-connector.version>8.0.33</mysql-connector.version>
-        <org.projectlombok.version>1.18.20</org.projectlombok.version>
+        <org.projectlombok.version>1.18.30</org.projectlombok.version>
         <springdoc.version>2.3.0</springdoc.version>
         <kotlin-reflect.version>1.9.25</kotlin-reflect.version>
         <spring-cloud-alibaba-dependencies.version>2023.0.1.2</spring-cloud-alibaba-dependencies.version>

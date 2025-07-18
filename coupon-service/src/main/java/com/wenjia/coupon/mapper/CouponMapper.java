@@ -9,4 +9,8 @@ import org.apache.ibatis.annotations.Update;
 public interface CouponMapper extends BaseMapper<Coupon> {
     @Update("update coupon set stock=stock+#{stockChange} where id=#{couponId}")
     void updateStock(@Param("couponId") Long couponId,@Param("stockChange") Integer stockChange);
+    @Update("update coupon set stock=stock-1 where id=#{couponId} and stock>0")
+    void reduceStock(@Param("couponId") Long couponId);
+    @Update("update coupon set stock=stock+1 where id=#{couponId}")
+    void incrStock(@Param("couponId") Long couponId);
 }

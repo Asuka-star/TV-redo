@@ -30,7 +30,7 @@ public class CouponController {
     @Operation(summary = "抢购优惠券")
     @PostMapping("/secKill")
     public Result<Long> secKill(@RequestParam("couponId") Long couponId){
-        Long orderId=couponService.seckill(couponId);
+        Long orderId=couponService.secKill(couponId);
         return Result.success(orderId);
     }
 

@@ -6,3 +6,7 @@ wenjia:
 dubbo:
   protocol:
     port: 20882
+rocketmq:
+  producer:
+    group: OrderGroup
+  name-server: 192.168.145.128:9876

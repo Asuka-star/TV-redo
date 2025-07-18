@@ -15,11 +15,15 @@ public interface CouponService extends IService<Coupon> {
     //获取库存
     Integer getStock(Long couponId);
     //秒杀优惠券
-    Long seckill(Long couponId);
+    Long secKill(Long couponId);
     //删除优惠券
     void delete(Long couponId);
     //修改优惠券的库存
     void updateStock(Long couponId, Integer stockChange);
+    //生成订单之后的减少库存
+    void reduceStock(Long couponId);
+    //订单未支付的回滚库存
+    void incrStock(Long couponId);
     //判断商铺名下还有没有正在抢购的优惠券
     List<Coupon> getByShopId(Long shopId);
     //删除商铺下的所有优惠券

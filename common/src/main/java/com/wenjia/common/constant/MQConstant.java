@@ -1,7 +1,6 @@
-package com.wenjia.common.config;
+package com.wenjia.common.constant;
 
-public class MQConfig {
-    public static final String NAME_SERVER_ADDR="127.0.0.1:9876";
+public class MQConstant {
     public static final String ORDER_CREATE_TAG="order_create_tag";
     public static final String ORDER_CHECK_TAG="order_check_tag";
     public static final String ORDER_CREATE_TOPIC="order_create_topic";

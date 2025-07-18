@@ -7,9 +7,7 @@ import com.wenjia.common.result.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -25,5 +23,12 @@ public class OrderController {
     public Result<List<OrderVO>> getOwnedShops() {
         List<OrderVO> OrderVOS = orderService.getOwnedShops();
         return Result.success(OrderVOS);
+    }
+
+    @PutMapping("/payment")
+    @Operation(summary = "订单支付")
+    public Result paymentWithOrder(Long orderId) {
+        orderService.payment(orderId);
+        return Result.success();
     }
 }
