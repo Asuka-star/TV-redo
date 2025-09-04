@@ -22,6 +22,10 @@ public class OrderProducer {
      * 发送创建订单消息
      * @param order
      */
+
+    /*将订单创建整合上了rocketmq，服务端使用的是5.3.2版本
+    然后spring整合的rocketmq不支持5.x版本，同时他的2.3.4版本还有问题，所以最终选择了使用4.9.7的客户端连接5.3.2的服务端
+    但是其实也可以只用官网提供的最原始的依赖，但是那个我在原来的TV上面使用了，这里就不用了，而且感觉启动速度慢*/
     public void sendOrderCreateMessage(Order order) {
         rocketMQTemplate.asyncSend(MQConstant.ORDER_CREATE_TOPIC + ":" + MQConstant.ORDER_CREATE_TAG,
                 order, new SendCallback() {

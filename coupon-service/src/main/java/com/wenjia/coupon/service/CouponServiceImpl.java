@@ -180,6 +180,10 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                 .createTime(LocalDateTime.now())
                 .build();
         //order创建的数据库操作并扣减了库存
+        //todo 感觉这里并不是先生成订单id，而是使用websocket来进行长连接
+        // 先是返回抢购成功，然后发消息，消费者生成订单成功之后再告诉用户订单id
+        // 但是我感觉我这样也够了
+        // 用户在客户端申请秒杀请求后，进行轮询，查看是否秒杀成功，秒杀成功则进入秒杀订单详情，否则秒杀失败
         try {
             orderProducer.sendOrderCreateMessage(order);
         } catch (Exception e) {

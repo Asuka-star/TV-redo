@@ -7,7 +7,6 @@ import com.wenjia.common.constant.MQConstant;
 import com.wenjia.common.constant.OrderConstant;
 import com.wenjia.common.exception.OrderException;
 import com.wenjia.common.util.RedisUtil;
-import com.wenjia.coupon.mq.producer.OrderProducer;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

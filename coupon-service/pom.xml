@@ -122,7 +122,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!--不使用5.0版本就好了-->
+        <!-- 手动引入 4.x 客户端 -->
         <dependency>
             <groupId>org.apache.rocketmq</groupId>
             <artifactId>rocketmq-client</artifactId>

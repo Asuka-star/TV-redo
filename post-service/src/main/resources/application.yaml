@@ -11,3 +11,8 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+minio:
+  endpoint: http://192.168.145.128:9000
+  bucketName: tvredo
+  accessKey: admin
+  secretKey: adminadmin
