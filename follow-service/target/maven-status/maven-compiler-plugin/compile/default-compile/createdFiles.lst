@@ -1,0 +1,4 @@
+com\wenjia\follow\controller\FollowController.class
+com\wenjia\follow\service\FollowServiceImpl.class
+com\wenjia\follow\mapper\FollowMapper.class
+com\wenjia\follow\FollowApplication.class

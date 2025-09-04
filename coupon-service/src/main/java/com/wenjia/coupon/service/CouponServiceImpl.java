@@ -1,0 +1,389 @@
+package com.wenjia.coupon.service;
+
+
+import cn.hutool.core.bean.BeanUtil;
+import com.alibaba.fastjson2.JSON;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.wenjia.api.domain.dto.CouponDTO;
+import com.wenjia.api.domain.po.Coupon;
+import com.wenjia.api.domain.po.Order;
+import com.wenjia.api.domain.vo.CouponVO;
+import com.wenjia.api.domain.vo.ShopVO;
+import com.wenjia.api.service.CouponService;
+import com.wenjia.api.service.OrderService;
+import com.wenjia.api.service.ShopService;
+import com.wenjia.common.constant.RedisConstant;
+import com.wenjia.common.context.BaseContext;
+import com.wenjia.common.exception.BaseException;
+import com.wenjia.common.exception.CouponException;
+import com.wenjia.common.util.RedisUtil;
+import com.wenjia.coupon.mapper.CouponMapper;
+import com.wenjia.coupon.mq.producer.OrderProducer;
+import com.wenjia.coupon.util.RedisId;
+import lombok.RequiredArgsConstructor;
+import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.config.annotation.DubboService;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.data.redis.core.RedisTemplate;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
+@DubboService
+@RequiredArgsConstructor
+public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> implements CouponService {
+
+    @DubboReference
+    private ShopService shopService;
+    @DubboReference
+    private OrderService orderService;
+
+    private final CouponMapper couponMapper;
+
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedissonClient redissonClient;
+    private final RedisUtil redisUtil;
+    private final RedisId redisId;
+    private final OrderProducer orderProducer;
+    //todo sentinel 的限流操作
+    /*public CouponServiceImpl(){
+        initFlowRules();
+    }*/
+
+    @Override
+    public void save(CouponDTO couponDTO) {
+        checkFormat(couponDTO);
+        //转化成Coupon类
+        Coupon coupon = BeanUtil.copyProperties(couponDTO, Coupon.class);
+        save(coupon);
+        long expireTime = getExpireTimeByEndTime(couponDTO.getEndTime());
+        //进行缓存当前优惠券的信息，(主要是缓存优惠券的时间和所属的商铺id)
+        redisTemplate.opsForValue().set(RedisConstant.COUPON_KEY + coupon.getId(),
+                JSON.toJSONString(coupon),
+                expireTime, TimeUnit.SECONDS);
+        //缓存当前优惠券的库存信息
+        redisTemplate.opsForValue().set(RedisConstant.COUPON_STOCK_KEY + coupon.getId(),
+                couponDTO.getStock(),
+                expireTime, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public List<CouponVO> queryByShopId(Long shopId) {
+        return lambdaQuery().eq(Coupon::getShopId, shopId).list()
+                .stream().map(coupon -> BeanUtil.copyProperties(coupon, CouponVO.class))
+                .toList();
+    }
+
+    @Override
+    public Integer getStock(Long couponId) {
+        //只查询正在抢购的优惠券
+        String key = RedisConstant.COUPON_STOCK_KEY + couponId;
+        Integer value = (Integer) redisTemplate.opsForValue().get(key);
+        if (value == null) {
+            throw new CouponException("缓存异常,没有id为" + couponId + "的优惠券缓存");
+        }
+        try {
+            return value;
+        } catch (NumberFormatException e) {
+            throw new CouponException("缓存异常,id为" + couponId + "的优惠券缓存存入的值有误");
+        }
+    }
+
+    public Coupon getById(Long couponId) {
+        //先查询缓存
+        String key = RedisConstant.COUPON_KEY + couponId;
+        String value = (String) redisTemplate.opsForValue().get(key);
+        if (value != null) {
+            return value.isEmpty() ? null : JSON.parseObject(value, Coupon.class);
+        }
+        //缓存未击中，查询数据库
+        //进行加锁以免缓存击穿
+        RLock lock = redissonClient.getLock(couponId.toString());
+        try {
+            if (lock.tryLock(1L, 10L, TimeUnit.SECONDS)) {
+                try {
+                    //双重检查：获取锁后再次确认缓存状态
+                    String doubleCheckValue = (String) redisTemplate.opsForValue().get(key);
+                    if (doubleCheckValue != null) {
+                        return doubleCheckValue.isEmpty() ? null : JSON.parseObject(doubleCheckValue, Coupon.class);
+                    }
+                    //查询数据库
+                    Coupon coupon = lambdaQuery().eq(Coupon::getId, couponId).one();
+                    //缓存数据
+                    if (coupon == null) {
+                        redisTemplate.opsForValue().set(
+                                key,
+                                "",
+                                180L,
+                                TimeUnit.SECONDS
+                        );
+                    } else {
+                        redisTemplate.opsForValue().set(
+                                key,
+                                coupon,
+                                getExpireTimeByEndTime(coupon.getEndTime()),
+                                TimeUnit.SECONDS
+                        );
+
+                    }
+                    return coupon;
+                } finally {
+                    // 确保释放锁
+                    lock.unlock();
+                }
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        //重试多次失败后仍然不行就抛出异常
+        throw new BaseException("系统繁忙，请稍后重试");
+    }
+
+    @Override
+    public Long secKill(Long couponId) {
+        //查询优惠券
+        Coupon coupon = getById(couponId);
+        //查找到之后需要判断是否存在这么一个优惠券和是否是在抢购时间
+        if (coupon == null) {
+            throw new CouponException("不存在id为" + couponId + "的优惠券");
+        }
+        LocalDateTime beginTime = coupon.getBeginTime();
+        LocalDateTime endTime = coupon.getEndTime();
+        LocalDateTime now = LocalDateTime.now();
+        if (beginTime.isAfter(now)) {
+            throw new CouponException("当前优惠券抢购未开始");
+        }
+        if (endTime.isBefore(now)) {
+            throw new CouponException("当前优惠券抢购已结束");
+        }
+        //通过redis的lua脚本来解决超卖和一人一单的问题
+        //当前用户id
+        Long userId = BaseContext.getCurrentId();
+        //检查优惠券库存和用户是否已经购买过了
+        long res = redisUtil.checkSecKill(couponId, userId, getExpireTimeByEndTime(coupon.getEndTime()));
+        if (res == 1L) {
+            throw new CouponException("库存不足,已经被抢购完了");
+        } else if (res == 2L) {
+            throw new CouponException("您已经买过该优惠券了");
+        }
+        //返回零说明抢购成功
+        Long id = redisId.createId(RedisConstant.ORDER_KEY);
+        Order order = Order.builder()
+                .id(id)
+                .userId(userId)
+                .couponId(couponId)
+                .createTime(LocalDateTime.now())
+                .build();
+        //order创建的数据库操作并扣减了库存
+        //todo 感觉这里并不是先生成订单id，而是使用websocket来进行长连接
+        // 先是返回抢购成功，然后发消息，消费者生成订单成功之后再告诉用户订单id
+        // 但是我感觉我这样也够了
+        // 用户在客户端申请秒杀请求后，进行轮询，查看是否秒杀成功，秒杀成功则进入秒杀订单详情，否则秒杀失败
+        try {
+            orderProducer.sendOrderCreateMessage(order);
+        } catch (Exception e) {
+            //信息发送失败进行缓存数据的回退
+            redisUtil.rollBackStock(order.getCouponId(), order.getUserId());
+            throw new CouponException("RRR服务繁忙请稍后再试");
+        }
+        return id;
+    }
+
+    //todo 限流
+//    /**
+//     * 初始化限流规则
+//     */
+//    private void initFlowRules() {
+//        //限流
+//        FlowRule rule = new FlowRule("secKill")
+//                .setGrade(RuleConstant.FLOW_GRADE_QPS)
+//                .setCount(1000)
+//                .setControlBehavior(RuleConstant.CONTROL_BEHAVIOR_RATE_LIMITER)
+//                .setMaxQueueingTimeMs(200);
+//        FlowRuleManager.loadRules(Collections.singletonList(rule));
+//        //熔断
+//        DegradeRule degradeRule = new DegradeRule("secKill")
+//                .setGrade(RuleConstant.DEGRADE_GRADE_RT)
+//                .setCount(2000)
+//                .setTimeWindow(3)
+//                .setMinRequestAmount(10)
+//                .setStatIntervalMs(3000);
+//        DegradeRuleManager.loadRules(Collections.singletonList(degradeRule));
+//    }
+
+    /**
+     * 删除优惠券，不能让用户来传递商铺id
+     */
+    @Override
+    public void delete(Long couponId) {
+        Coupon coupon = checkValid(couponId);
+        //如果优惠券正在抢购则无法进行删除
+        LocalDateTime beginTime = coupon.getBeginTime();
+        LocalDateTime endTime = coupon.getEndTime();
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.ofHours(8));
+        if (beginTime.isAfter(now) && endTime.isBefore(now)) {
+            throw new CouponException("优惠券正在进行抢购,无法进行删除");
+        }
+        //可以进行删除，进行延迟双删,需要删除优惠券信息和优惠券库存信息
+        String couponKey = RedisConstant.COUPON_KEY + couponId;
+        String stockKey = RedisConstant.COUPON_STOCK_KEY + couponId;
+        lambdaUpdate().eq(Coupon::getId, couponId).remove();
+        redisTemplate.delete(couponKey);
+        redisTemplate.delete(stockKey);
+    }
+
+    /**
+     * 修改数据库中的优惠券库存
+     */
+    @Override
+    public void updateStock(Long couponId, Integer stockChange) {
+        if (Math.abs(stockChange) > 1000000) {
+            throw new CouponException("库存变化量过大");
+        }
+        //店主一次只能进行一次
+        RLock lock = redissonClient.getLock(RedisConstant.UPDATE_STOCK_KEY + couponId);
+        try {
+            if (lock.tryLock(2L, 10L, TimeUnit.SECONDS)) {
+                try {
+                    Coupon coupon = checkValid(couponId);
+                    //判断优惠券抢购时间是否已经结束了
+                    if (coupon.getEndTime().isBefore(LocalDateTime.now(ZoneOffset.ofHours(8)))) {
+                        throw new CouponException("当前优惠券已经结束抢购，无法再进行库存修改");
+                    }
+                    if (getStock(couponId) + stockChange > 1000000) throw new CouponException("优惠券库存超出限制");
+                    //修改缓存中的库存
+                    updateStockWithRedis(couponId, stockChange);
+                    //修改数据库中的缓存
+                    try {
+                        couponMapper.updateStock(couponId, stockChange);
+                    } catch (Exception e) {
+                        //数据库中的库存更新失败，需要将缓存中的库存回到最开始
+                        updateStockWithRedis(couponId, -stockChange);
+                        throw new CouponException("更新库存失败");
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            } else {
+                //没有获取到锁
+                throw new CouponException("请勿重复操作");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void reduceStock(Long couponId) {
+        couponMapper.reduceStock(couponId);
+    }
+
+    @Override
+    public void incrStock(Long couponId) {
+        couponMapper.incrStock(couponId);
+    }
+
+    @Override
+    public List<Coupon> getByShopId(Long shopId) {
+        return lambdaQuery().eq(Coupon::getShopId, shopId).list();
+    }
+
+    @Override
+    public void deleteByShopId(Long shopId) {
+        lambdaUpdate().eq(Coupon::getShopId, shopId).remove();
+    }
+
+    /**
+     * 修改缓存中的优惠券库存
+     */
+    public void updateStockWithRedis(Long couponId, Integer stockChange) {
+        long res = redisUtil.updateStock(couponId, stockChange);
+        if (res == 1) {
+            throw new CouponException("优惠券已经被删除了");
+        } else if (res == 2) {
+            throw new CouponException("优惠券库存不足以减少输入的数量");
+        }
+    }
+
+    /**
+     * 检查当前用户操作的合法性
+     */
+    private Coupon checkValid(Long couponId) {
+        //先查询该优惠券是否存在,并通过优惠券id来查询优惠券所属的商铺id
+        Coupon coupon = getById(couponId);
+        if (coupon == null) {
+            throw new CouponException("不存在id为" + couponId + "的优惠券");
+        }
+        //检查当前用户是不是店主能不能删
+        ShopVO shopVO = shopService.getByIdWithCache(coupon.getShopId());
+        Long userId = BaseContext.getCurrentId();
+        if (!Objects.equals(userId, shopVO.getOwnerId())) {
+            throw new CouponException("您不是店主，无法进行此操作");
+        }
+        return coupon;
+    }
+
+
+    /**
+     * 检验用户传递的值
+     */
+    private void checkFormat(CouponDTO couponDTO) {
+        //获取字段信息
+        BigDecimal discountRate = couponDTO.getDiscountRate();
+        BigDecimal fullAmount = couponDTO.getFullAmount();
+        BigDecimal reduceAmount = couponDTO.getReduceAmount();
+        LocalDateTime beginTime = couponDTO.getBeginTime();
+        LocalDateTime endTime = couponDTO.getEndTime();
+        Integer type = couponDTO.getType();
+        BigDecimal maxDiscountRate = new BigDecimal(100);
+        BigDecimal maxAmount = new BigDecimal(1000);
+        BigDecimal zero = new BigDecimal(0);
+        switch (type) {
+            case 1:
+                if (discountRate == null || discountRate.compareTo(maxDiscountRate) > 0
+                        || discountRate.compareTo(zero) < 0 || fullAmount != null || reduceAmount != null) {
+                    throw new CouponException("输入的折扣券信息有误");
+                }
+                break;
+            case 2:
+                if (reduceAmount == null || reduceAmount.compareTo(maxAmount) > 0
+                        || discountRate != null || fullAmount != null || reduceAmount.compareTo(zero) < 0) {
+                    throw new CouponException("输入的立减券信息有误，最大为1000");
+                }
+                break;
+            case 3:
+                if (reduceAmount == null || fullAmount == null
+                        || fullAmount.compareTo(maxAmount) > 0 || reduceAmount.compareTo(maxAmount) > 0
+                        || discountRate != null || reduceAmount.compareTo(fullAmount) > 0) {
+                    throw new CouponException("输入的满减券信息有误，最大为1000");
+                }
+                break;
+            default:
+                throw new CouponException("没有此类型的优惠券");
+        }
+        //检查时间(只以当前时间的年月日时分进行判断，不加上秒)
+        LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+        if (beginTime.isAfter(endTime) || beginTime.isBefore(now)) {
+            throw new CouponException("优惠券的抢购时间有误");
+        }
+    }
+
+    /**
+     * 通过抢购结束时间获取缓存过期时间
+     */
+    private Long getExpireTimeByEndTime(LocalDateTime endTime) {
+        //还需要判断一下当前优惠券的抢购时间是否已经结束了
+        if (endTime.isBefore(LocalDateTime.now(ZoneOffset.ofHours(8)))) {
+            //已经结束了,返回三分钟
+            return 180L;
+        }
+        //比优惠券结束时间多一分钟
+        return endTime.plusMinutes(1L).toEpochSecond(ZoneOffset.ofHours(8))
+                - LocalDateTime.now(ZoneOffset.ofHours(8)).toEpochSecond(ZoneOffset.ofHours(8));
+    }
+}

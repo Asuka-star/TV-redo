@@ -1,0 +1,18 @@
+server:
+  port: 8095 # 服务端口
+wenjia:
+  springdoc:
+    scan: com.wenjia.post.controller
+dubbo:
+  protocol:
+    port: 20885
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+minio:
+  endpoint: http://192.168.145.128:9000
+  bucketName: tvredo
+  accessKey: admin
+  secretKey: adminadmin
