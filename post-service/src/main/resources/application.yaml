@@ -14,5 +14,5 @@ spring:
 minio:
   endpoint: http://10.21.76.53:9000
   bucketName: tvredo
-  accessKey: admin
-  secretKey: adminadmin
+  accessKey: minio123
+  secretKey: minio123
