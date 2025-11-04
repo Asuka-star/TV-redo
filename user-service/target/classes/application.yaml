@@ -1,8 +1,0 @@
-server:
-  port: 8098 # 服务端口
-wenjia:
-  springdoc:
-    scan: com.wenjia.user.controller
-dubbo:
-  protocol:
-    port: 20888

@@ -1,7 +1,0 @@
-server:
-  port: 8090 # 服务端口
-
-wenjia:
-  jwt:
-    duration: 10000000000
-    secret-key: wenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjiawenjia;

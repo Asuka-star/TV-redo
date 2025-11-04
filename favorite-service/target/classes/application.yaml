@@ -1,8 +1,0 @@
-server:
-  port: 8093 # 服务端口
-wenjia:
-  springdoc:
-    scan: com.wenjia.favorite.controller
-dubbo:
-  protocol:
-    port: 20883

@@ -1,8 +1,0 @@
-server:
-  port: 8091 # 服务端口
-wenjia:
-  springdoc:
-    scan: com.wenjia.comment.controller
-dubbo:
-  protocol:
-    port: 20881
