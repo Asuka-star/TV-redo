@@ -32,7 +32,7 @@ RUN mvn clean package -DskipTests
 # -----------------------------------------------
 # 阶段 2: 运行 (使用精简的 JRE)
 # -----------------------------------------------
-FROM openjdk:17-jre-slim
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/openjdk:17-jdk-slim
 
 # 设置工作目录
 WORKDIR /app
