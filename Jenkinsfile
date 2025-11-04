@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/Asuka-star/TV-redo.git'  // 请替换为您的仓库URL
-                echo “Workspace files:”
+                echo "Workspace files"
                 sh 'ls -la'
             }
         }
