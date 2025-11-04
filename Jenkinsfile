@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Asuka-star/TV-redo.git'  // 请替换为您的仓库URL
+                git branch: 'main', url: 'https://gitee.com/Darlingtwo/TV-redo.git'  // 请替换为您的仓库URL
                 echo "Workspace files"
                 sh 'ls -la'
             }
