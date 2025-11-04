@@ -16,7 +16,7 @@ pipeline {
             agent {
                 docker { 
                     image 'docker/compose:1.29.2' // 启动一个包含 'docker-compose' 命令的工具容器
-                    args '-v /var/run/docker.sock:/var/run/docker.sock' // 把“指挥权”交给它
+                    args '-v /var/run/docker.sock:/var/run/docker.sock -u root' // 把“指挥权”交给它
                 }
             }
             
