@@ -21,15 +21,8 @@ RUN echo '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="ht
 
 # 复制 pom.xml，利用 Docker 缓存层
 # 只有 pom.xml 变化时，才会重新下载依赖
-COPY pom.xml .
-RUN mvn dependency:go-offline
-
-# 复制所有源代码
-COPY src ./src
-
-# 运行 Maven 打包
-# (这里我们跳过了测试，因为 Jenkins 应该在前面步骤单独测试)
-RUN mvn clean package -DskipTests
+COPY . .
+RUN mvn clean package -DskipTests -pl comment-service -am
 
 # -----------------------------------------------
 # 阶段 2: 运行 (使用精简的 JRE)
@@ -41,7 +34,7 @@ WORKDIR /app
 
 # 从 'builder' 阶段复制已打包好的 .jar 文件
 # (!! 注意: 这里的 'app.jar' 是你打包后的文件名，请按需修改)
-COPY --from=builder /app/target/*.jar /app.jar
+COPY --from=builder /app/comment-service/target/*.jar /app.jar
 
 # 暴露你的服务端口 (比如 Spring Boot 默认的 8080)
 EXPOSE 8091

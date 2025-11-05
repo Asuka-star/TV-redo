@@ -18,16 +18,11 @@ RUN echo '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="ht
     </mirrors>\
 </settings>' > /usr/share/maven/conf/settings.xml
 
-# 复制 pom.xml，利用 Docker 缓存层
-# 只有 pom.xml 变化时，才会重新下载依赖
-COPY pom.xml .
-RUN mvn dependency:go-offline
-
 # 复制所有源代码
-COPY src ./src
+COPY . .
 
 # 运行 Maven 打包
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -pl gateway -am
 
 # -----------------------------------------------
 # 阶段 2: 运行 (使用精简的 JRE)
@@ -38,7 +33,7 @@ FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/openjdk:17-jdk-s
 WORKDIR /app
 
 # 从 'builder' 阶段复制已打包好的 .jar 文件
-COPY --from=builder /app/target/*.jar /app.jar
+COPY --from=builder /app/gateway/target/*.jar /app.jar
 
 # 暴露服务端口
 EXPOSE 8090
