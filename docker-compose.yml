@@ -2,13 +2,13 @@
 
 services:
   user-service:
-    image: tv-redo-user-service:latest          # [!! 优化 !!] 固定的镜像名
-    container_name: tv-redo-user-service        # [!! 优化 !!] 固定的容器名
+    image: tv-redo-user-service:latest
+    container_name: tv-redo-user-service
     build: ./user-service
     ports:
       - "8098:8098"
     networks:
-      - microservices-network
+      - microservices-network  # 链接到下面的别名
 
   gateway:
     image: tv-redo-gateway:latest
@@ -24,7 +24,7 @@ services:
     container_name: tv-redo-comment-service
     build: ./comment-service
     ports:
-      - "8099:8091"  # [!! 保留 !!] 你的端口冲突修复
+      - "8099:8091"  # [保留] 你的端口冲突修复
     networks:
       - microservices-network
 
@@ -82,6 +82,9 @@ services:
     networks:
       - microservices-network
 
+# [!! 核心修复 !!]
+# 我们不再创建新网络，而是告诉 Compose 去使用一个已存在的网络
 networks:
-  microservices-network:
-    driver: bridge # [!! 保留 !!] 按照你的要求，使用默认的桥接网络
+  microservices-network: # 这只是一个此文件内使用的“别名”
+    external: true     # 告诉 Compose 这是个“外部”网络
+    name: tv-net       # 这个外部网络的“真名”叫 tv-net
