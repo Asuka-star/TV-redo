@@ -28,11 +28,11 @@ pipeline {
                 script {
                     echo "Building Docker images (fast)..."
                     // Jenkins 直接在宿主机上运行 docker-compose
-                    sh 'docker-compose build'
+                    sh 'docker compose build'
 
                     echo "Deploying services..."
                     // (请确保你的 docker-compose.yml 修复了端口冲突)
-                    sh 'docker-compose up -d --no-deps'
+                    sh 'docker compose up -d --no-deps'
 
                     echo "Cleaning up old images..."
                     sh 'docker image prune -f'
