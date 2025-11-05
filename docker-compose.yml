@@ -2,81 +2,63 @@ version: '3.8'
 
 services:
   user-service:
-    build:
-      context: . # [修改点] 构建上下文是根目录
-      dockerfile: user-service/Dockerfile # [修改点] 指明 Dockerfile 的位置
+    build: ./user-service
     ports:
       - "8098:8098"
     networks:
       - microservices-network
 
   gateway:
-    build:
-      context: .
-      dockerfile: gateway/Dockerfile
+    build: ./gateway
     ports:
       - "8090:8090"
     networks:
       - microservices-network
 
   comment-service:
-    build:
-      context: .
-      dockerfile: comment-service/Dockerfile
+    build: ./comment-service
     ports:
       - "8099:8091"
     networks:
       - microservices-network
 
   shop-service:
-    build:
-      context: .
-      dockerfile: shop-service/Dockerfile
+    build: ./shop-service
     ports:
       - "8096:8096"
     networks:
       - microservices-network
 
   thumb-service:
-    build:
-      context: .
-      dockerfile: thumb-service/Dockerfile
+    build: ./thumb-service
     ports:
       - "8097:8097"
     networks:
       - microservices-network
 
   follow-service:
-    build:
-      context: .
-      dockerfile: follow-service/Dockerfile
+    build: ./follow-service
     ports:
       - "8094:8094"
     networks:
       - microservices-network
 
   post-service:
-    build:
-      context: .
-      dockerfile: post-service/Dockerfile
+    build: ./post-service
     ports:
       - "8095:8095"
     networks:
       - microservices-network
 
   favorite-service:
-    build:
-      context: .
-      dockerfile: favorite-service/Dockerfile
+    build: ./favorite-service
     ports:
       - "8093:8093"
     networks:
       - microservices-network
 
   coupon-service:
-    build:
-      context: .
-      dockerfile: coupon-service/Dockerfile
+    build: ./coupon-service
     ports:
       - "8092:8092"
     networks:
