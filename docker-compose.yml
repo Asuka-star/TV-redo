@@ -2,8 +2,8 @@
 
 services:
   user-service:
-    image: tv-redo-user-service:latest
-    container_name: tv-redo-user-service
+    image: user-service:latest
+    container_name: user-service
     build: ./user-service
     ports:
       - "8098:8098"
@@ -11,8 +11,8 @@ services:
       - microservices-network  # 链接到下面的别名
 
   gateway:
-    image: tv-redo-gateway:latest
-    container_name: tv-redo-gateway
+    image: gateway:latest
+    container_name: gateway
     build: ./gateway
     ports:
       - "8090:8090"
@@ -20,8 +20,8 @@ services:
       - microservices-network
 
   comment-service:
-    image: tv-redo-comment-service:latest
-    container_name: tv-redo-comment-service
+    image: comment-service:latest
+    container_name: comment-service
     build: ./comment-service
     ports:
       - "8099:8091"  # [保留] 你的端口冲突修复
@@ -29,8 +29,8 @@ services:
       - microservices-network
 
   shop-service:
-    image: tv-redo-shop-service:latest
-    container_name: tv-redo-shop-service
+    image: shop-service:latest
+    container_name: shop-service
     build: ./shop-service
     ports:
       - "8096:8096"
@@ -38,8 +38,8 @@ services:
       - microservices-network
 
   thumb-service:
-    image: tv-redo-thumb-service:latest
-    container_name: tv-redo-thumb-service
+    image: thumb-service:latest
+    container_name: thumb-service
     build: ./thumb-service
     ports:
       - "8097:8097"
@@ -47,8 +47,8 @@ services:
       - microservices-network
 
   follow-service:
-    image: tv-redo-follow-service:latest
-    container_name: tv-redo-follow-service
+    image: follow-service:latest
+    container_name: follow-service
     build: ./follow-service
     ports:
       - "8094:8094"
@@ -56,8 +56,8 @@ services:
       - microservices-network
 
   post-service:
-    image: tv-redo-post-service:latest
-    container_name: tv-redo-post-service
+    image: post-service:latest
+    container_name: post-service
     build: ./post-service
     ports:
       - "8095:8095"
@@ -65,8 +65,8 @@ services:
       - microservices-network
 
   favorite-service:
-    image: tv-redo-favorite-service:latest
-    container_name: tv-redo-favorite-service
+    image: favorite-service:latest
+    container_name: favorite-service
     build: ./favorite-service
     ports:
       - "8093:8093"
@@ -74,8 +74,8 @@ services:
       - microservices-network
 
   coupon-service:
-    image: tv-redo-coupon-service:latest
-    container_name: tv-redo-coupon-service
+    image: coupon-service:latest
+    container_name: coupon-service
     build: ./coupon-service
     ports:
       - "8092:8092"

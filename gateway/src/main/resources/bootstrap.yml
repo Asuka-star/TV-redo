@@ -16,7 +16,7 @@ spring:
       globalcors: # 全局跨域配置
         cors-configurations:
           '[/**]':
-            allowedOrigins: "*"
+            allowedOrigins: "http://localhost:5173"
             allowedMethods:
               - GET
               - POST
